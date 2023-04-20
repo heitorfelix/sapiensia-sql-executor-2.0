@@ -23,7 +23,7 @@ def load_login_data():
 class LoginWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-
+    
         # definindo a janela principal
         self.setWindowTitle("Tela de Login")
         self.setGeometry(100, 100, 300, 200)
@@ -85,9 +85,9 @@ class LoginWindow(QMainWindow):
             QMessageBox.warning(self, "Erro de Conexão", "Não foi possível conectar ao servidor.")
 
 class QueryWindow(QMainWindow):
-    def __init__(self, conn):
-        super().__init__()
 
+
+    def menu_bar(self):
         # criando o menu de login
         menubar = self.menuBar()
         login_menu = menubar.addMenu('User')
@@ -98,6 +98,11 @@ class QueryWindow(QMainWindow):
 
         # adicionando a ação de logout ao menu de login
         login_menu.addAction(logout_action)
+
+    def __init__(self, conn):
+        super().__init__()
+
+        self.menu_bar()
 
         # definindo a janela principal
         self.setWindowTitle("Query Window")
@@ -111,25 +116,18 @@ class QueryWindow(QMainWindow):
         self.text_query = QTextEdit()
         self.button_run_query = QPushButton("Executar Query")
 
-        # criando widgets para exibir a entrada e a saída da consulta
-        self.input_output = QTextEdit()
-        self.input_output.setReadOnly(True)
-        self.result_output = QTextEdit()
-        self.result_output.setReadOnly(True)
-
-
         # criando o layout da tela de query
         layout = QHBoxLayout()
         menu_layout = QVBoxLayout()
         menu_layout.addWidget(self.label_select_db)
         menu_layout.addWidget(self.list_select_db)
         layout.addLayout(menu_layout)
-        layout.addWidget(self.text_query)
-        layout.addWidget(self.button_run_query)
 
-        # adicionando widgets de entrada e saída da consulta ao layout
-        layout.addWidget(self.input_output)
-        layout.addWidget(self.result_output)
+        ddl_layout = QVBoxLayout()
+        ddl_layout.addWidget(self.text_query)
+        ddl_layout.addWidget(self.button_run_query)
+        layout.addLayout(ddl_layout)
+
 
         # criando o widget central
         widget = QWidget()
