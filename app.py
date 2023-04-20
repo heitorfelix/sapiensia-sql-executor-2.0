@@ -102,20 +102,36 @@ class LoginWindow(QMainWindow):
 class QueryWindow(QMainWindow):
 
     def menu_bar(self):
-        # criando o menu de login
+        # criando o menu de user e pages
         menubar = self.menuBar()
-        login_menu = menubar.addMenu('User')
+        user_menu = menubar.addMenu('User')
+        page_menu = menubar.addMenu('Pages')
 
-        # criando a ação de logout
+        # criando a ação de logout e refresh + adicionando no menu
         logout_action = QAction('Logout', self)
         logout_action.triggered.connect(self.logout)
-
-        # adicionando a ação de logout ao menu de login
-        login_menu.addAction(logout_action)
-
+        user_menu.addAction(logout_action)
         refresh_action = QAction(QIcon('.icons/refresh.png'), 'Refresh', self)
         refresh_action.triggered.connect(self.refresh_database_list)
-        login_menu.addAction(refresh_action)
+        user_menu.addAction(refresh_action)
+
+        # criando a ação de mudança de pagina ddl e query e adicionando no menu
+        ddl_action = QAction('DDL', self)
+        ddl_action.triggered.connect(self.ddl_page)
+        query_action = QAction('Query', self)
+        query_action.triggered.connect(self.query_page)
+        page_menu.addAction(ddl_action)
+        page_menu.addAction(query_action)
+
+    def ddl_page(self):
+        self.close()
+        self.ddl_window = DDLWindow(self.conn)
+        self.ddl_window.show()
+
+    def query_page(self):
+        self.close()
+        self.query_window = QueryWindow(self.conn)
+        self.query_window.show()
 
     def refresh_database_list(self):
         # limpa a lista atual de bancos de dados
@@ -236,21 +252,38 @@ class QueryWindow(QMainWindow):
 
 class DDLWindow(QMainWindow):
 
+   
     def menu_bar(self):
-        # criando o menu de login
+        # criando o menu de user e pages
         menubar = self.menuBar()
-        login_menu = menubar.addMenu('User')
+        user_menu = menubar.addMenu('User')
+        page_menu = menubar.addMenu('Pages')
 
-        # criando a ação de logout
+        # criando a ação de logout e refresh + adicionando no menu
         logout_action = QAction('Logout', self)
         logout_action.triggered.connect(self.logout)
-
-        # adicionando a ação de logout ao menu de login
-        login_menu.addAction(logout_action)
-
+        user_menu.addAction(logout_action)
         refresh_action = QAction(QIcon('.icons/refresh.png'), 'Refresh', self)
         refresh_action.triggered.connect(self.refresh_database_list)
-        login_menu.addAction(refresh_action)
+        user_menu.addAction(refresh_action)
+
+        # criando a ação de mudança de pagina ddl e query e adicionando no menu
+        ddl_action = QAction('DDL', self)
+        ddl_action.triggered.connect(self.ddl_page)
+        query_action = QAction('Query', self)
+        query_action.triggered.connect(self.query_page)
+        page_menu.addAction(ddl_action)
+        page_menu.addAction(query_action)
+    def ddl_page(self):
+        self.close()
+        self.ddl_window = DDLWindow(self.conn)
+        self.ddl_window.show()
+
+    def query_page(self):
+        self.close()
+        self.query_window = QueryWindow(self.conn)
+        self.query_window.show()
+
 
     def refresh_database_list(self):
         # limpa a lista atual de bancos de dados
@@ -383,8 +416,6 @@ class DDLWindow(QMainWindow):
 
         results = fail + sucesso
         return results
-
-
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
