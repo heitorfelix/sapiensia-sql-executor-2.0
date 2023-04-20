@@ -1,6 +1,7 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget,\
- QMessageBox, QTextEdit,QTableWidget, QListWidget, QAbstractItemView, QAction, QHBoxLayout, QTableWidgetItem
+ QMessageBox, QTextEdit,QTableWidget, QListWidget, QAbstractItemView, QAction, QHBoxLayout, QTableWidgetItem,\
+ QComboBox
 from PyQt5.QtGui import QFont, QColor, QIcon
 
 import pickle
@@ -64,29 +65,176 @@ class LoginWindow(QMainWindow):
         # conectando o botão de login à função de teste de conexão
         self.button_login.clicked.connect(self.test_connection)
 
+        self.label_query_type = QLabel("Tipo de consulta:")
+        self.combo_query_type = QComboBox()
+        self.combo_query_type.addItem("DDL")
+        self.combo_query_type.addItem("Query")
+
+        layout.addWidget(self.label_query_type)
+        layout.addWidget(self.combo_query_type)
+
     def test_connection(self):
         # lendo os dados inseridos na tela de login
         server = self.edit_server.text()
         username = self.edit_username.text()
         password = self.edit_password.text()
-        print(server)
-        print(username)
-        print(password)
+        query_type = self.combo_query_type.currentText() # obtém o tipo de consulta selecionado
+
         # testando a conexão com o banco de dados
         conn = Conexao(server, user=username, password=password)
         if conn.test_azure_connection():
             # salvando os dados de login para a próxima vez
             save_login_data(server, username)
             
-            # abrindo a janela de consulta
-            self.query_window = QueryWindow(conn)
+            # abrindo a janela correspondente ao tipo de consulta selecionado
+            if query_type == "DDL":
+                self.query_window = DDLWindow(conn)
+            else:
+                self.query_window = QueryWindow(conn)
+                
             self.query_window.show()
             self.close()
         else:
             # exibindo mensagem de erro
             QMessageBox.warning(self, "Erro de Conexão", "Não foi possível conectar ao servidor.")
 
+
 class QueryWindow(QMainWindow):
+
+    def menu_bar(self):
+        # criando o menu de login
+        menubar = self.menuBar()
+        login_menu = menubar.addMenu('User')
+
+        # criando a ação de logout
+        logout_action = QAction('Logout', self)
+        logout_action.triggered.connect(self.logout)
+
+        # adicionando a ação de logout ao menu de login
+        login_menu.addAction(logout_action)
+
+        refresh_action = QAction(QIcon('.icons/refresh.png'), 'Refresh', self)
+        refresh_action.triggered.connect(self.refresh_database_list)
+        login_menu.addAction(refresh_action)
+
+    def refresh_database_list(self):
+        # limpa a lista atual de bancos de dados
+        self.list_select_db.clear()
+
+        # atualiza a lista de bancos de dados
+        self.list_select_db.addItems(self.conn.list_databases())
+
+    def __init__(self, conn):
+        super().__init__()
+
+        self.menu_bar()
+
+        # definindo a janela principal
+        self.setWindowTitle("DDL Window")
+        self.setGeometry(100, 100, 800, 600)
+
+        # criando os widgets da tela de query
+        self.label_select_db = QLabel("Selecionar banco(s) de dados:")
+        self.list_select_db = QListWidget()
+        self.list_select_db.setSelectionMode(QAbstractItemView.MultiSelection)
+        self.list_select_db.addItems(conn.list_databases())
+        self.text_query = QTextEdit()
+        self.button_run_query = QPushButton("Executar")
+
+        # criando o layout da tela de query
+        layout = QHBoxLayout()
+        menu_layout = QVBoxLayout()
+        menu_layout.addWidget(self.label_select_db)
+        menu_layout.addWidget(self.list_select_db)
+        layout.addLayout(menu_layout)
+
+        vertical_layout = QVBoxLayout()
+
+        # CAIXA DE DDL
+        ddl_layout = QVBoxLayout()
+        ddl_layout.addWidget(QLabel("Escreva um comando DDL para executar"))
+        ddl_layout.addWidget(self.text_query)
+        ddl_layout.setStretchFactor(self.text_query, 2)
+        ddl_height = self.geometry().height() // 4
+        self.text_query.setFixedHeight(ddl_height )
+        font = QFont("Arial", 10)  # cria uma fonte com tamanho 10 e tipo Arial
+        self.text_query.setFont(font)  # aplica a fonte ao widget QTextEdit
+        ddl_layout.addWidget(self.button_run_query)
+        vertical_layout.addLayout(ddl_layout)
+
+        # Criando a tabela de resultados
+        self.table_results = QTableWidget()
+        # self.table_results.setColumnCount(2)
+        # self.table_results.setHorizontalHeaderLabels(["Banco de dados", "Resultados"])
+        vertical_layout.addWidget(self.table_results)
+        layout.addLayout(vertical_layout)
+
+        # criando o widget central
+        widget = QWidget()
+        widget.setLayout(layout)
+        self.setCentralWidget(widget)
+
+        # conectando o botão de executar query ao método correspondente
+        self.button_run_query.clicked.connect(self.on_button_run_query_clicked)
+
+        # armazenando a conexão com o banco de dados
+        self.conn = conn
+        
+        # adicionando widget de status para exibir informações de usuário e servidor
+        status_label = QLabel(f"Usuário: {self.conn.user} - Servidor: {self.conn.server}")
+        self.statusBar().addWidget(status_label)
+
+    def logout(self):
+        # fechando a janela atual
+        self.close()
+
+        # abrindo uma nova instância da janela de login
+        self.login_window = LoginWindow()
+        self.login_window.show()
+
+    def on_button_run_query_clicked(self):
+        # obtendo a query a ser executada
+        query = self.text_query.toPlainText()
+
+        # obtendo os bancos selecionados
+        selected_databases = [self.list_select_db.item(i).text() for i in range(self.list_select_db.count()) if self.list_select_db.item(i).isSelected()]
+        
+        columns = ['DatabaseName']
+        sample_database = selected_databases[0]
+
+        columns += self.conn.get_columns(sample_database, query)
+        self.table_results.setColumnCount(len(columns) )
+        self.table_results.setHorizontalHeaderLabels(columns)
+        # executando a query para cada banco selecionado
+        results = []
+
+        for db_name in selected_databases:
+            try:
+                # executando a query
+                result = self.conn.execute_query(db_name, query)
+                results = results + result
+            except Exception as e:
+                # armazenando a mensagem de erro
+                results.append((db_name, str(e)))
+
+        # preenchendo a tabela com os resultados
+        self.table_results.setRowCount(len(results))
+        for row, result in enumerate(results):
+            for column, item in enumerate(result):
+            # self.table_results.setItem(row, 0, QTableWidgetItem(result[0]))
+            # item = QTableWidgetItem(str(result[1]))
+                print(column, item)
+                self.table_results.setItem(row, column, QTableWidgetItem(str(item)))
+        # ajustando o tamanho das colunas para exibir os dados completos
+
+        self.table_results.resizeColumnToContents(0)
+        self.table_results.resizeRowsToContents()
+        self.table_results.horizontalHeader().setStretchLastSection(True) # estica a ultima coluna para preencher o espaço disponível
+
+        return results
+        
+
+class DDLWindow(QMainWindow):
 
     def menu_bar(self):
         # criando o menu de login
@@ -217,17 +365,6 @@ class QueryWindow(QMainWindow):
 
         sucessos = [result[1] == 'Executado com sucesso' for result in results]
         num_sucessos = sum(sucessos)
-
-        # if num_sucessos == len(selected_databases):
-        #     QMessageBox.information(self, "Query Executada com Sucesso", "A query foi executada com sucesso para todos os bancos selecionados.")
-        # elif num_sucessos > 0:
-        #     error_message = ("\n".join([f"Erro no banco {result[0]}: {result[1]}" for result in results if result[1] == 'Executado com sucesso']).
-        #                      join([f"Erro no banco {result[0]}: {result[1]}" for result in results if not result[1] == 'Executado com sucesso'])+'\n')
-        #     QMessageBox.warning(self, "Algumas Execuções Falharam", error_message)
-        # else:
-        #     error_message = ("\n".join([f"Erro no banco {result[0]}: {result[1]}" for result in results]))
-        #     QMessageBox.critical(self, "Todas Execuções Falharam", error_message)
-        
         return results
         
     def sort_results(self, results):
@@ -246,6 +383,7 @@ class QueryWindow(QMainWindow):
 
         results = fail + sucesso
         return results
+
 
 
 if __name__ == '__main__':
