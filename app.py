@@ -1,8 +1,10 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget,\
  QMessageBox, QTextEdit,QTableWidget, QListWidget, QAbstractItemView, QAction, QHBoxLayout, QTableWidgetItem
+from PyQt5.QtGui import QFont
+
 import pickle
-from Conexao import Conexao
+from database import Conexao
 
 # salvar os dados de login em um arquivo
 def save_login_data(server, username, password):
@@ -105,7 +107,7 @@ class QueryWindow(QMainWindow):
         self.menu_bar()
 
         # definindo a janela principal
-        self.setWindowTitle("Query Window")
+        self.setWindowTitle("DDL Window")
         self.setGeometry(100, 100, 800, 600)
 
         # criando os widgets da tela de query
@@ -114,7 +116,7 @@ class QueryWindow(QMainWindow):
         self.list_select_db.setSelectionMode(QAbstractItemView.MultiSelection)
         self.list_select_db.addItems(conn.list_databases())
         self.text_query = QTextEdit()
-        self.button_run_query = QPushButton("Executar Query")
+        self.button_run_query = QPushButton("Executar")
 
         # criando o layout da tela de query
         layout = QHBoxLayout()
@@ -123,18 +125,26 @@ class QueryWindow(QMainWindow):
         menu_layout.addWidget(self.list_select_db)
         layout.addLayout(menu_layout)
 
+        vertical_layout = QVBoxLayout()
+
+        # CAIXA DE DDL
         ddl_layout = QVBoxLayout()
+        ddl_layout.addWidget(QLabel("Escreva um comando DDL para executar"))
         ddl_layout.addWidget(self.text_query)
+        ddl_layout.setStretchFactor(self.text_query, 2)
+        ddl_height = self.geometry().height() // 4
+        self.text_query.setFixedHeight(ddl_height )
+        font = QFont("Arial", 10)  # cria uma fonte com tamanho 10 e tipo Arial
+        self.text_query.setFont(font)  # aplica a fonte ao widget QTextEdit
         ddl_layout.addWidget(self.button_run_query)
-        layout.addLayout(ddl_layout)
+        vertical_layout.addLayout(ddl_layout)
 
         # Criando a tabela de resultados
         self.table_results = QTableWidget()
         self.table_results.setColumnCount(2)
         self.table_results.setHorizontalHeaderLabels(["Banco de dados", "Resultados"])
-        layout.addWidget(self.table_results)
-
-        # layout.addLayout(output)
+        vertical_layout.addWidget(self.table_results)
+        layout.addLayout(vertical_layout)
 
         # criando o widget central
         widget = QWidget()
@@ -168,7 +178,7 @@ class QueryWindow(QMainWindow):
         for db_name in selected_databases:
             try:
                 # executando a query
-                result = self.conn.execute_query(db_name, query)
+                result = self.conn.execute_ddl(db_name, query)
                 results.append(result)
             except Exception as e:
                 # armazenando a mensagem de erro
