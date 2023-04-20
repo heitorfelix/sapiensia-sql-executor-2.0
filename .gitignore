@@ -1,0 +1,6 @@
+*.pkl
+myenv
+prototipos
+icons
+__pycache__
+app.spec
