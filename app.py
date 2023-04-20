@@ -1,7 +1,7 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget,\
  QMessageBox, QTextEdit,QTableWidget, QListWidget, QAbstractItemView, QAction, QHBoxLayout, QTableWidgetItem
-from PyQt5.QtGui import QFont, QColor
+from PyQt5.QtGui import QFont, QColor, QIcon
 
 import pickle
 from database import Conexao
@@ -89,6 +89,7 @@ class LoginWindow(QMainWindow):
 class QueryWindow(QMainWindow):
 
 
+
     def menu_bar(self):
         # criando o menu de login
         menubar = self.menuBar()
@@ -100,6 +101,19 @@ class QueryWindow(QMainWindow):
 
         # adicionando a ação de logout ao menu de login
         login_menu.addAction(logout_action)
+
+        refresh_action = QAction(QIcon('.icons/refresh.png'), 'Refresh', self)
+        refresh_action.triggered.connect(self.refresh_database_list)
+        login_menu.addAction(refresh_action)
+
+    def refresh_database_list(self):
+        # limpa a lista atual de bancos de dados
+        self.list_select_db.clear()
+
+        # atualiza a lista de bancos de dados
+        self.list_select_db.addItems(self.conn.list_databases())
+
+    
 
     def __init__(self, conn):
         super().__init__()
