@@ -1,7 +1,7 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget,\
  QMessageBox, QTextEdit,QTableWidget, QListWidget, QAbstractItemView, QAction, QHBoxLayout, QTableWidgetItem
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QFont, QColor
 
 import pickle
 from database import Conexao
@@ -188,7 +188,10 @@ class QueryWindow(QMainWindow):
         self.table_results.setRowCount(len(results))
         for row, result in enumerate(results):
             self.table_results.setItem(row, 0, QTableWidgetItem(result[0]))
-            self.table_results.setItem(row, 1, QTableWidgetItem(str(result[1])))
+            item = QTableWidgetItem(str(result[1]))
+            if result[1] == 'Consulta realizada':
+                item.setBackground(QColor(152, 251, 152)) # Define a cor de fundo da célula para verde
+            self.table_results.setItem(row, 1, item)
         # ajustando o tamanho das colunas para exibir os dados completos
 
         self.table_results.resizeColumnToContents(0)
