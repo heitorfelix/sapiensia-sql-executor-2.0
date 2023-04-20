@@ -129,14 +129,25 @@ class QueryWindow(QMainWindow):
         layout.addLayout(ddl_layout)
 
 
+        # criando o layout de output
+        output = QVBoxLayout()
+        output_title = QHBoxLayout()
+
+        output_title.addWidget(QLabel("Banco de dados"))
+        output_title.addWidget(QLabel("Resultados"))
+        output.addLayout(output_title)
+        output.addWidget(QTextEdit())
+
+        layout.addLayout(output)
+
         # criando o widget central
         widget = QWidget()
         widget.setLayout(layout)
         self.setCentralWidget(widget)
 
         # conectando o botão de executar query ao método correspondente
-        self.button_run_query.clicked.connect(self.on_button_run_query_clicked)
-
+        results = self.button_run_query.clicked.connect(self.on_button_run_query_clicked)
+        print(results)
         # armazenando a conexão com o banco de dados
         self.conn = conn
 
@@ -179,6 +190,8 @@ class QueryWindow(QMainWindow):
         else:
             error_message = ("\n".join([f"Erro no banco {result[0]}: {result[1]}" for result in results]))
             QMessageBox.critical(self, "Todas Execuções Falharam", error_message)
+        
+        return results
             
 
 if __name__ == '__main__':
