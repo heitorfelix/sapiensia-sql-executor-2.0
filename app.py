@@ -7,9 +7,9 @@ import pickle
 from database import Conexao
 
 # salvar os dados de login em um arquivo
-def save_login_data(server, username, password):
+def save_login_data(server, username):
     with open("login_data.pkl", "wb") as f:
-        login_data = {"server": server, "username": username, "password": password}
+        login_data = {"server": server, "username": username}
         pickle.dump(login_data, f)
 
 # carregar os dados de login de um arquivo
@@ -17,7 +17,7 @@ def load_login_data():
     try:
         with open("login_data.pkl", "rb") as f:
             login_data = pickle.load(f)
-            return login_data["server"], login_data["username"], login_data["password"]
+            return login_data["server"], login_data["username"]
     except FileNotFoundError:
         return "", "", ""
     
@@ -41,10 +41,10 @@ class LoginWindow(QMainWindow):
         self.button_login = QPushButton("Login")
 
         # preenchendo os campos com os dados salvos (se existirem)
-        server, username, password = load_login_data()
+        server, username = load_login_data()
         self.edit_server.setText(server)
         self.edit_username.setText(username)
-        self.edit_password.setText(password)
+
 
         # criando o layout da tela de login
         layout = QVBoxLayout()
@@ -76,7 +76,7 @@ class LoginWindow(QMainWindow):
         conn = Conexao(server, user=username, password=password)
         if conn.test_azure_connection():
             # salvando os dados de login para a próxima vez
-            save_login_data(server, username, password)
+            save_login_data(server, username)
             
             # abrindo a janela de consulta
             self.query_window = QueryWindow(conn)
@@ -198,13 +198,16 @@ class QueryWindow(QMainWindow):
                 # armazenando a mensagem de erro
                 results.append((db_name, str(e)))
 
+        results = self.sort_results(results)
         # preenchendo a tabela com os resultados
         self.table_results.setRowCount(len(results))
         for row, result in enumerate(results):
             self.table_results.setItem(row, 0, QTableWidgetItem(result[0]))
             item = QTableWidgetItem(str(result[1]))
-            if result[1] == 'Consulta realizada':
+            if result[1] == 'Executado com sucesso':
                 item.setBackground(QColor(152, 251, 152)) # Define a cor de fundo da célula para verde
+            else:
+                item.setBackground(QColor(255, 255, 224)) # Define a cor de fundo da célula para verde
             self.table_results.setItem(row, 1, item)
         # ajustando o tamanho das colunas para exibir os dados completos
 
@@ -212,21 +215,38 @@ class QueryWindow(QMainWindow):
         self.table_results.resizeRowsToContents()
         self.table_results.horizontalHeader().setStretchLastSection(True) # estica a ultima coluna para preencher o espaço disponível
 
-        sucessos = [result[1] == 'Consulta realizada' for result in results]
+        sucessos = [result[1] == 'Executado com sucesso' for result in results]
         num_sucessos = sum(sucessos)
 
-        if num_sucessos == len(selected_databases):
-            QMessageBox.information(self, "Query Executada com Sucesso", "A query foi executada com sucesso para todos os bancos selecionados.")
-        elif num_sucessos > 0:
-            error_message = ("\n".join([f"Erro no banco {result[0]}: {result[1]}" for result in results if result[1] == 'Consulta realizada']).
-                             join([f"Erro no banco {result[0]}: {result[1]}" for result in results if not result[1] == 'Consulta realizada'])+'\n')
-            QMessageBox.warning(self, "Algumas Execuções Falharam", error_message)
-        else:
-            error_message = ("\n".join([f"Erro no banco {result[0]}: {result[1]}" for result in results]))
-            QMessageBox.critical(self, "Todas Execuções Falharam", error_message)
+        # if num_sucessos == len(selected_databases):
+        #     QMessageBox.information(self, "Query Executada com Sucesso", "A query foi executada com sucesso para todos os bancos selecionados.")
+        # elif num_sucessos > 0:
+        #     error_message = ("\n".join([f"Erro no banco {result[0]}: {result[1]}" for result in results if result[1] == 'Executado com sucesso']).
+        #                      join([f"Erro no banco {result[0]}: {result[1]}" for result in results if not result[1] == 'Executado com sucesso'])+'\n')
+        #     QMessageBox.warning(self, "Algumas Execuções Falharam", error_message)
+        # else:
+        #     error_message = ("\n".join([f"Erro no banco {result[0]}: {result[1]}" for result in results]))
+        #     QMessageBox.critical(self, "Todas Execuções Falharam", error_message)
         
         return results
-            
+        
+    def sort_results(self, results):
+        sucesso = []
+        fail = []
+
+        for item in results:
+
+            db_name = item[0]
+            result = item[1]
+
+            if result == 'Executado com sucesso':
+                sucesso.append((db_name, result))
+            else:
+                fail.append((db_name, result))
+
+        results = fail + sucesso
+        return results
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
