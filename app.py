@@ -1,6 +1,6 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget,\
- QMessageBox, QTextEdit, QListWidget, QAbstractItemView, QAction, QHBoxLayout, QGridLayout
+ QMessageBox, QTextEdit,QTableWidget, QListWidget, QAbstractItemView, QAction, QHBoxLayout, QTableWidgetItem
 import pickle
 from Conexao import Conexao
 
@@ -128,17 +128,13 @@ class QueryWindow(QMainWindow):
         ddl_layout.addWidget(self.button_run_query)
         layout.addLayout(ddl_layout)
 
+        # Criando a tabela de resultados
+        self.table_results = QTableWidget()
+        self.table_results.setColumnCount(2)
+        self.table_results.setHorizontalHeaderLabels(["Banco de dados", "Resultados"])
+        layout.addWidget(self.table_results)
 
-        # criando o layout de output
-        output = QVBoxLayout()
-        output_title = QHBoxLayout()
-
-        output_title.addWidget(QLabel("Banco de dados"))
-        output_title.addWidget(QLabel("Resultados"))
-        output.addLayout(output_title)
-        output.addWidget(QTextEdit())
-
-        layout.addLayout(output)
+        # layout.addLayout(output)
 
         # criando o widget central
         widget = QWidget()
@@ -177,6 +173,12 @@ class QueryWindow(QMainWindow):
             except Exception as e:
                 # armazenando a mensagem de erro
                 results.append((db_name, str(e)))
+
+        # preenchendo a tabela com os resultados
+        self.table_results.setRowCount(len(results))
+        for row, result in enumerate(results):
+            self.table_results.setItem(row, 0, QTableWidgetItem(result[0]))
+            self.table_results.setItem(row, 1, QTableWidgetItem(str(result[1])))
 
         sucessos = [result[1] == 'Consulta realizada' for result in results]
         num_sucessos = sum(sucessos)
