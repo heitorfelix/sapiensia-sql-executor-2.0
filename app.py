@@ -179,6 +179,11 @@ class QueryWindow(QMainWindow):
         for row, result in enumerate(results):
             self.table_results.setItem(row, 0, QTableWidgetItem(result[0]))
             self.table_results.setItem(row, 1, QTableWidgetItem(str(result[1])))
+        # ajustando o tamanho das colunas para exibir os dados completos
+
+        self.table_results.resizeColumnToContents(0)
+        self.table_results.resizeRowsToContents()
+        self.table_results.horizontalHeader().setStretchLastSection(True) # estica a ultima coluna para preencher o espaço disponível
 
         sucessos = [result[1] == 'Consulta realizada' for result in results]
         num_sucessos = sum(sucessos)
