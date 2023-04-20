@@ -88,8 +88,6 @@ class LoginWindow(QMainWindow):
 
 class QueryWindow(QMainWindow):
 
-
-
     def menu_bar(self):
         # criando o menu de login
         menubar = self.menuBar()
@@ -112,8 +110,6 @@ class QueryWindow(QMainWindow):
 
         # atualiza a lista de bancos de dados
         self.list_select_db.addItems(self.conn.list_databases())
-
-    
 
     def __init__(self, conn):
         super().__init__()
@@ -166,10 +162,14 @@ class QueryWindow(QMainWindow):
         self.setCentralWidget(widget)
 
         # conectando o botão de executar query ao método correspondente
-        results = self.button_run_query.clicked.connect(self.on_button_run_query_clicked)
-        print(results)
+        self.button_run_query.clicked.connect(self.on_button_run_query_clicked)
+
         # armazenando a conexão com o banco de dados
         self.conn = conn
+        
+        # adicionando widget de status para exibir informações de usuário e servidor
+        status_label = QLabel(f"Usuário: {self.conn.user} - Servidor: {self.conn.server}")
+        self.statusBar().addWidget(status_label)
 
     def logout(self):
         # fechando a janela atual

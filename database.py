@@ -81,7 +81,7 @@ class Conexao:
             cursor.commit()
 
             # Obter o resultado da consulta
-            result = 'Consulta realizada'
+            result = 'Executado com sucesso'
            
         except ProgrammingError as e:
             result = str(e)
