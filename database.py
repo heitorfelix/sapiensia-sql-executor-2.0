@@ -24,7 +24,9 @@ class Conexao:
         elif self.user == '' and self.password == '':
             conn_str = 'DRIVER={SQL Server Native Client 11.0};SERVER='+self.server+';DATABASE='+self.database+';Trusted_Connection=yes;'
 
-        print(conn_str)
+        else:
+            raise NameError("Missing crendentials")
+        # print(conn_str)
         try:
             with pyodbc.connect(conn_str) as conn:
                 cursor = conn.cursor()
@@ -58,11 +60,10 @@ class Conexao:
     
     def execute_ddl(self, database, query):
 
-        ddl_keywords = ['alter', 'create', 'drop', 'truncate', 'rename']
+        ddl_keywords = ['alter', 'create', 'drop', 'truncate', 'rename', 'insert']
 
         if query.split()[0].lower() not in ddl_keywords:
             raise QueryError("This application only accepts DDL queries")
-        
 
         # Estabelecer a conexão com o banco
         conn_str = self.conn_str.replace(self.database, database)
@@ -91,6 +92,55 @@ class Conexao:
 
         # Retornar o nome do banco e o resultado da consulta
         return db_name, result
+    
+    def get_columns(self, database, query):
+         # Estabelecer a conexão com o banco
+        conn_str = self.conn_str.replace(self.database, database)
+        conn = pyodbc.connect(conn_str)
+        cursor = conn.cursor()
+        cursor.execute(query)
+        
+        # Obter as colunas do resultado
+        columns = [column[0] for column in cursor.description]
+        conn.close()
+
+        return columns
+
+    def execute_query(self, database, query):
+
+        # Estabelecer a conexão com o banco
+        conn_str = self.conn_str.replace(self.database, database)
+        conn = pyodbc.connect(conn_str)
+        
+        # Executar a consulta para obter o nome do banco
+        cursor = conn.cursor()
+        cursor.execute("SELECT DB_NAME()")
+
+        # Obter o nome do banco
+        db_name = cursor.fetchone()[0]
+        
+        try:
+            # Executar a consulta principal
+            cursor.execute(query)
+            
+            # Obter as colunas do resultado
+            columns = [column[0] for column in cursor.description]
+            
+            # Obter as linhas do resultado
+            rows = cursor.fetchall()
+
+            # Montar a lista de tuplas com o nome do banco e o resultado
+            result = [(db_name,) + tuple(row) for row in rows]
+
+
+        except ProgrammingError as e:
+            result = str(e)
+            
+        # Fechar a conexão com o banco
+        conn.close()
+
+        return result
+
 
     
     def execute_query_in_databases(self, databases, query):
