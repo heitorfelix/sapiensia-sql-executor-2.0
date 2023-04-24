@@ -1,3 +1,3 @@
-venv\Scripts\activate.bat
-call python app.py
+call venv\Scripts\activate.bat
+python app.py
 deactivate
