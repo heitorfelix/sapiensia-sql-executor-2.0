@@ -274,7 +274,6 @@ class QueryWindow(QMainWindow):
 
         for db_name in selected_databases:
             result = self.conn.execute_query(db_name, query)
-            print(result)
             if "Error: " in result: # armazenando a mensagem de erro
                 results.append((db_name, ) + len(columns) * (result,))
             else:
