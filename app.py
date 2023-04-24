@@ -11,6 +11,8 @@ from datetime import datetime
 import pickle
 from database import Conexao
 
+CURRENT_DIR = current_dir = os.path.dirname(os.path.abspath(__file__))
+
 # salvar os dados de login em um arquivo
 def save_login_data(server, username):
     with open("login_data.pkl", "wb") as f:
@@ -115,10 +117,10 @@ class QueryWindow(QMainWindow):
         page_menu = menubar.addMenu('Pages')
 
         # criando a ação de logout e refresh + adicionando no menu
-        logout_action = QAction('Logout', self)
+        logout_action = QAction(QIcon(os.path.join(CURRENT_DIR, 'icons', 'logout_icon.png')), 'Logout', self)
         logout_action.triggered.connect(self.logout)
         user_menu.addAction(logout_action)
-        refresh_action = QAction(QIcon('.icons/refresh.png'), 'Refresh', self)
+        refresh_action = QAction(QIcon(os.path.join(CURRENT_DIR, 'icons', 'refresh.png')), 'Refresh', self)
         refresh_action.triggered.connect(self.refresh_database_list)
         user_menu.addAction(refresh_action)
 
@@ -326,10 +328,10 @@ class DDLWindow(QMainWindow):
         page_menu = menubar.addMenu('Pages')
 
         # criando a ação de logout e refresh + adicionando no menu
-        logout_action = QAction('Logout', self)
+        logout_action = QAction(QIcon(os.path.join(CURRENT_DIR, 'icons', 'logout_icon.png')), 'Logout', self)
         logout_action.triggered.connect(self.logout)
         user_menu.addAction(logout_action)
-        refresh_action = QAction(QIcon('.icons/refresh.png'), 'Refresh', self)
+        refresh_action = QAction(QIcon(os.path.join(CURRENT_DIR, 'icons', 'refresh.png')), 'Refresh', self)
         refresh_action.triggered.connect(self.refresh_database_list)
         user_menu.addAction(refresh_action)
 
