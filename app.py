@@ -46,9 +46,12 @@ class LoginWindow(QMainWindow):
         self.button_login = QPushButton("Login")
 
         # preenchendo os campos com os dados salvos (se existirem)
-        server, username = load_login_data()
-        self.edit_server.setText(server)
-        self.edit_username.setText(username)
+        try:
+            server, username = load_login_data()
+            self.edit_server.setText(server)
+            self.edit_username.setText(username)
+        except:
+            pass
 
 
         # criando o layout da tela de login
@@ -69,10 +72,10 @@ class LoginWindow(QMainWindow):
         # conectando o botão de login à função de teste de conexão
         self.button_login.clicked.connect(self.test_connection)
 
-        self.label_query_type = QLabel("Tipo de consulta:")
+        self.label_query_type = QLabel("Tipo de comando:")
         self.combo_query_type = QComboBox()
-        self.combo_query_type.addItem("DDL")
-        self.combo_query_type.addItem("Query")
+        self.combo_query_type.addItem("DDL/DML")
+        self.combo_query_type.addItem("Query (DQL)")
 
         layout.addWidget(self.label_query_type)
         layout.addWidget(self.combo_query_type)
@@ -172,7 +175,7 @@ class QueryWindow(QMainWindow):
 
         # CAIXA DE DDL
         ddl_layout = QVBoxLayout()
-        label = QLabel("Escreva uma query para executar")
+        label = QLabel("Escreva uma query (DQL) para executar")
         font = QFont("Arial", 10) #cria uma fonte com tamanho 12 e tipo Arial
         label.setFont(font) #define a nova fonte com tamanho 12 no QLabel
         ddl_layout.addWidget(label)
@@ -181,7 +184,7 @@ class QueryWindow(QMainWindow):
         ddl_layout.setStretchFactor(self.text_query, 2)
         ddl_height = self.geometry().height() // 4
         self.text_query.setFixedHeight(ddl_height )
-        font = QFont("Arial", 10)  # cria uma fonte com tamanho 10 e tipo Arial
+        font = QFont("Consolas", 10)  # cria uma fonte com tamanho 10 e tipo Arial
         self.text_query.setFont(font)  # aplica a fonte ao widget QTextEdit
         ddl_layout.addWidget(self.button_run_query)
         vertical_layout.addLayout(ddl_layout)
@@ -265,7 +268,7 @@ class QueryWindow(QMainWindow):
                 results = results + result
             except Exception as e:
                 # armazenando a mensagem de erro
-                results.append((db_name, str(e)))
+                results.append((db_name, ) + len(columns) * (str(e),))
 
         # preenchendo a tabela com os resultados
         self.table_results.setRowCount(len(results))
@@ -375,7 +378,7 @@ class DDLWindow(QMainWindow):
 
         # CAIXA DE DDL
         ddl_layout = QVBoxLayout()
-        label = QLabel("Escreva um comando DDL para executar")
+        label = QLabel("Escreva um comando DDL/DML para executar")
         font = QFont("Arial", 10) #cria uma fonte com tamanho 12 e tipo Arial
         label.setFont(font) #define a nova fonte com tamanho 12 no QLabel
 
