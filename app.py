@@ -1,8 +1,12 @@
 import sys
+import csv
+import os
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget,\
  QMessageBox, QTextEdit,QTableWidget, QListWidget, QAbstractItemView, QAction, QHBoxLayout, QTableWidgetItem,\
  QComboBox
 from PyQt5.QtGui import QFont, QColor, QIcon
+from pyodbc import ProgrammingError
+from datetime import datetime
 
 import pickle
 from database import Conexao
@@ -146,7 +150,7 @@ class QueryWindow(QMainWindow):
         self.menu_bar()
 
         # definindo a janela principal
-        self.setWindowTitle("DDL Window")
+        self.setWindowTitle("Query Window")
         self.setGeometry(100, 100, 800, 600)
 
         # criando os widgets da tela de query
@@ -168,7 +172,11 @@ class QueryWindow(QMainWindow):
 
         # CAIXA DE DDL
         ddl_layout = QVBoxLayout()
-        ddl_layout.addWidget(QLabel("Escreva um comando DDL para executar"))
+        label = QLabel("Escreva uma query para executar")
+        font = QFont("Arial", 10) #cria uma fonte com tamanho 12 e tipo Arial
+        label.setFont(font) #define a nova fonte com tamanho 12 no QLabel
+        ddl_layout.addWidget(label)
+
         ddl_layout.addWidget(self.text_query)
         ddl_layout.setStretchFactor(self.text_query, 2)
         ddl_height = self.geometry().height() // 4
@@ -180,9 +188,15 @@ class QueryWindow(QMainWindow):
 
         # Criando a tabela de resultados
         self.table_results = QTableWidget()
-        # self.table_results.setColumnCount(2)
-        # self.table_results.setHorizontalHeaderLabels(["Banco de dados", "Resultados"])
         vertical_layout.addWidget(self.table_results)
+
+        # criando o botão
+        self.button_export = QPushButton("Exportar resultados em csv")
+        self.button_export.setEnabled(False) # desabilita o botão inicialmente
+
+        # adicionando o botão ao layout
+        vertical_layout.addWidget(self.button_export)
+
         layout.addLayout(vertical_layout)
 
         # criando o widget central
@@ -193,12 +207,23 @@ class QueryWindow(QMainWindow):
         # conectando o botão de executar query ao método correspondente
         self.button_run_query.clicked.connect(self.on_button_run_query_clicked)
 
+        # configura botão oculto para salvar csv
+        self.table_results.itemChanged.connect(self.on_table_results_changed)
+        self.button_export.clicked.connect(self.save_csv)
+
         # armazenando a conexão com o banco de dados
         self.conn = conn
         
         # adicionando widget de status para exibir informações de usuário e servidor
         status_label = QLabel(f"Usuário: {self.conn.user} - Servidor: {self.conn.server}")
         self.statusBar().addWidget(status_label)
+
+
+    def on_table_results_changed(self):
+        if self.table_results.rowCount() > 0:
+            self.button_export.setEnabled(True)
+        else:
+            self.button_export.setEnabled(False)
 
     def logout(self):
         # fechando a janela atual
@@ -214,19 +239,28 @@ class QueryWindow(QMainWindow):
 
         # obtendo os bancos selecionados
         selected_databases = [self.list_select_db.item(i).text() for i in range(self.list_select_db.count()) if self.list_select_db.item(i).isSelected()]
-        
-        columns = ['DatabaseName']
-        sample_database = selected_databases[0]
 
-        columns += self.conn.get_columns(sample_database, query)
-        self.table_results.setColumnCount(len(columns) )
-        self.table_results.setHorizontalHeaderLabels(columns)
+        if selected_databases: 
+            columns = ['DatabaseName']
+            sample_database = selected_databases[0]
+        else:
+            QMessageBox.warning(self, f"Erro", "Selecione algum database ")
+            self.close()
+            self.show()
+            return None
+
+        try:
+            columns += self.conn.get_columns(sample_database, query)
+            self.table_results.setColumnCount(len(columns) )
+            self.table_results.setHorizontalHeaderLabels(columns)
+        except ProgrammingError as e:
+            QMessageBox.warning(self, f"Erro de Conexão em {sample_database}", str(e))
+            self.refresh_database_list()
         # executando a query para cada banco selecionado
         results = []
 
         for db_name in selected_databases:
             try:
-                # executando a query
                 result = self.conn.execute_query(db_name, query)
                 results = results + result
             except Exception as e:
@@ -237,18 +271,39 @@ class QueryWindow(QMainWindow):
         self.table_results.setRowCount(len(results))
         for row, result in enumerate(results):
             for column, item in enumerate(result):
-            # self.table_results.setItem(row, 0, QTableWidgetItem(result[0]))
-            # item = QTableWidgetItem(str(result[1]))
-                print(column, item)
                 self.table_results.setItem(row, column, QTableWidgetItem(str(item)))
         # ajustando o tamanho das colunas para exibir os dados completos
 
         self.table_results.resizeColumnToContents(0)
         self.table_results.resizeRowsToContents()
         self.table_results.horizontalHeader().setStretchLastSection(True) # estica a ultima coluna para preencher o espaço disponível
-
+        
+        # armazenando em memória
+        self.results = results
+        self.columns = columns
         return results
         
+
+    def save_csv(self):
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        if not os.path.exists("./dados"):
+            os.mkdir('./dados')
+
+        try:
+            with open(f"dados/query_{timestamp}.csv", "w", newline="") as arquivo_csv:
+
+                escritor = csv.writer(arquivo_csv)
+                escritor.writerow(self.columns)
+                for tupla in self.results:
+                    escritor.writerow(tupla)
+            QMessageBox.information(self, "Sucesso", "Arquivo exportado")
+            self.close()
+            self.show()
+        except Exception as e:
+            QMessageBox.warning(self, "Erro", str(e))
+
 
 class DDLWindow(QMainWindow):
 
@@ -320,7 +375,11 @@ class DDLWindow(QMainWindow):
 
         # CAIXA DE DDL
         ddl_layout = QVBoxLayout()
-        ddl_layout.addWidget(QLabel("Escreva um comando DDL para executar"))
+        label = QLabel("Escreva um comando DDL para executar")
+        font = QFont("Arial", 10) #cria uma fonte com tamanho 12 e tipo Arial
+        label.setFont(font) #define a nova fonte com tamanho 12 no QLabel
+
+        ddl_layout.addWidget(label)
         ddl_layout.addWidget(self.text_query)
         ddl_layout.setStretchFactor(self.text_query, 2)
         ddl_height = self.geometry().height() // 4
