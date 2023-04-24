@@ -94,7 +94,7 @@ class LoginWindow(QMainWindow):
             save_login_data(server, username)
             
             # abrindo a janela correspondente ao tipo de consulta selecionado
-            if query_type == "DDL":
+            if query_type == "DDL/DML":
                 self.query_window = DDLWindow(conn)
             else:
                 self.query_window = QueryWindow(conn)
