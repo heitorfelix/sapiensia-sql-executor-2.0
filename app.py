@@ -247,16 +247,16 @@ class QueryWindow(QMainWindow):
             sample_database = None
 
             for sample_database in selected_databases: 
-                try: 
-                    self.conn.execute_query(database, query + " WHERE 1 = 2")
-                    break
+                find_columns_query = query + " WHERE 1 = 2"
+                find_columns_test = self.conn.execute_query(sample_database, find_columns_query)
 
-                except:
-                    pass
+                if "Error: " in find_columns_test: # armazenando a mensagem de erro
+                    sample_database = None
+                else:
+                    break
 
             if not sample_database:
                 QMessageBox.critical(self, f"Erro", "A tabela não existem em nenhum database ")
-
 
         else:
             QMessageBox.warning(self, f"Erro", "Selecione algum database ")
@@ -275,13 +275,13 @@ class QueryWindow(QMainWindow):
         results = []
 
         for db_name in selected_databases:
-            try:
-                result = self.conn.execute_query(db_name, query)
-                results = results + result
-            except Exception as e:
-                # armazenando a mensagem de erro
-                results.append((db_name, ) + len(columns) * (str(e),))
-
+            result = self.conn.execute_query(db_name, query)
+            print(result)
+            if "Error: " in result: # armazenando a mensagem de erro
+                results.append((db_name, ) + len(columns) * (result,))
+            else:
+                results = results + result  # armazenando os resultados da query
+                
         # preenchendo a tabela com os resultados
         self.table_results.setRowCount(len(results))
         for row, result in enumerate(results):
