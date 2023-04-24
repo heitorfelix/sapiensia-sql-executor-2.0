@@ -3,7 +3,7 @@ import csv
 import os
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget,\
  QMessageBox, QTextEdit,QTableWidget, QListWidget, QAbstractItemView, QAction, QHBoxLayout, QTableWidgetItem,\
- QComboBox
+ QComboBox, QRadioButton 
 from PyQt5.QtGui import QFont, QColor, QIcon
 from pyodbc import ProgrammingError
 from datetime import datetime
@@ -33,18 +33,20 @@ class LoginWindow(QMainWindow):
     
         # definindo a janela principal
         self.setWindowTitle("Tela de Login")
-        self.setGeometry(100, 100, 300, 200)
+        self.setGeometry(100, 100, 300, 250)  # aumentando a altura para caber os radio buttons
         
         # criando os widgets da tela de login
-        self.label_username = QLabel("Username:")
         self.edit_username = QLineEdit()
-        self.label_password = QLabel("Password:")
         self.edit_password = QLineEdit()
         self.edit_password.setEchoMode(QLineEdit.Password)
-        self.label_server = QLabel("Server:")
         self.edit_server = QLineEdit()
         self.button_login = QPushButton("Login")
-
+        
+        # criando os radio buttons
+        self.radio_ddl_dml = QRadioButton("DDL/DML")
+        self.radio_dql = QRadioButton("Query (DQL)")
+        self.radio_ddl_dml.setChecked(True)  # deixando o DDL/DML selecionado por padrão
+        
         # preenchendo os campos com os dados salvos (se existirem)
         try:
             server, username = load_login_data()
@@ -53,15 +55,18 @@ class LoginWindow(QMainWindow):
         except:
             pass
 
-
         # criando o layout da tela de login
         layout = QVBoxLayout()
-        layout.addWidget(self.label_username)
+        layout.addWidget(QLabel("Username:"))
         layout.addWidget(self.edit_username)
-        layout.addWidget(self.label_password)
+        layout.addWidget(QLabel("Password:"))
         layout.addWidget(self.edit_password)
-        layout.addWidget(self.label_server)
+        layout.addWidget(QLabel("Server:"))
         layout.addWidget(self.edit_server)
+        
+        # adicionando os radio buttons ao layout
+        layout.addWidget(self.radio_ddl_dml)
+        layout.addWidget(self.radio_dql)
         layout.addWidget(self.button_login)
 
         # criando o widget central
@@ -71,32 +76,27 @@ class LoginWindow(QMainWindow):
 
         # conectando o botão de login à função de teste de conexão
         self.button_login.clicked.connect(self.test_connection)
-
-        self.label_query_type = QLabel("Tipo de comando:")
-        self.combo_query_type = QComboBox()
-        self.combo_query_type.addItem("DDL/DML")
-        self.combo_query_type.addItem("Query (DQL)")
-
-        layout.addWidget(self.label_query_type)
-        layout.addWidget(self.combo_query_type)
+        
+        # conectando os radio buttons ao slot de seleção
+        self.radio_ddl_dml.toggled.connect(self.on_radio_toggled)
+        self.radio_dql.toggled.connect(self.on_radio_toggled)
 
     def test_connection(self):
         # lendo os dados inseridos na tela de login
         server = self.edit_server.text()
         username = self.edit_username.text()
         password = self.edit_password.text()
-        query_type = self.combo_query_type.currentText() # obtém o tipo de consulta selecionado
 
         # testando a conexão com o banco de dados
         conn = Conexao(server, user=username, password=password)
         if conn.test_azure_connection():
             # salvando os dados de login para a próxima vez
             save_login_data(server, username)
-            
+
             # abrindo a janela correspondente ao tipo de consulta selecionado
-            if query_type == "DDL/DML":
+            if self.radio_ddl_dml.isChecked():
                 self.query_window = DDLWindow(conn)
-            else:
+            elif self.radio_dql.isChecked():
                 self.query_window = QueryWindow(conn)
                 
             self.query_window.show()
