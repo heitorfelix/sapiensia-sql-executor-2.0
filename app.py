@@ -78,8 +78,8 @@ class LoginWindow(QMainWindow):
         self.button_login.clicked.connect(self.test_connection)
         
         # conectando os radio buttons ao slot de seleção
-        self.radio_ddl_dml.toggled.connect(self.on_radio_toggled)
-        self.radio_dql.toggled.connect(self.on_radio_toggled)
+        # self.radio_ddl_dml.toggled.connect(self.on_radio_toggled)
+        # self.radio_dql.toggled.connect(self.on_radio_toggled)
 
     def test_connection(self):
         # lendo os dados inseridos na tela de login
@@ -199,7 +199,6 @@ class QueryWindow(QMainWindow):
 
         # adicionando o botão ao layout
         vertical_layout.addWidget(self.button_export)
-
         layout.addLayout(vertical_layout)
 
         # criando o widget central
@@ -220,7 +219,6 @@ class QueryWindow(QMainWindow):
         # adicionando widget de status para exibir informações de usuário e servidor
         status_label = QLabel(f"Usuário: {self.conn.user} - Servidor: {self.conn.server}")
         self.statusBar().addWidget(status_label)
-
 
     def on_table_results_changed(self):
         if self.table_results.rowCount() > 0:
@@ -245,7 +243,21 @@ class QueryWindow(QMainWindow):
 
         if selected_databases: 
             columns = ['DatabaseName']
-            sample_database = selected_databases[0]
+
+            sample_database = None
+
+            for sample_database in selected_databases: 
+                try: 
+                    self.conn.execute_query(database, query + " WHERE 1 = 2")
+                    break
+
+                except:
+                    pass
+
+            if not sample_database:
+                QMessageBox.critical(self, f"Erro", "A tabela não existem em nenhum database ")
+
+
         else:
             QMessageBox.warning(self, f"Erro", "Selecione algum database ")
             self.close()
@@ -310,7 +322,6 @@ class QueryWindow(QMainWindow):
 
 class DDLWindow(QMainWindow):
 
-   
     def menu_bar(self):
         # criando o menu de user e pages
         menubar = self.menuBar()
