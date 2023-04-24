@@ -244,11 +244,9 @@ class QueryWindow(QMainWindow):
         if selected_databases: 
             columns = ['DatabaseName']
 
-            sample_database = None
-
+            
             for sample_database in selected_databases: 
-                find_columns_query = query + " WHERE 1 = 2"
-                find_columns_test = self.conn.execute_query(sample_database, find_columns_query)
+                find_columns_test = self.conn.execute_query(sample_database, query)
 
                 if "Error: " in find_columns_test: # armazenando a mensagem de erro
                     sample_database = None

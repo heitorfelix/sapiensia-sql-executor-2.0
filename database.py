@@ -26,7 +26,6 @@ class Conexao:
 
         else:
             raise NameError("Missing crendentials")
-        # print(conn_str)
         try:
             with pyodbc.connect(conn_str) as conn:
                 cursor = conn.cursor()
@@ -134,7 +133,7 @@ class Conexao:
 
 
         except ProgrammingError as e:
-            result = str(e)
+            result = "Error: " + str(e)
             
         # Fechar a conexão com o banco
         conn.close()
