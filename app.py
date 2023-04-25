@@ -8,8 +8,8 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont, QColor, QIcon
 from pyodbc import ProgrammingError
 from datetime import datetime
-
 import pickle
+import pandas as pd
 from database import Conexao
 
 CURRENT_DIR = current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -205,9 +205,12 @@ class QueryWindow(QMainWindow):
         
 
         # criando o botão
-        self.button_export = QPushButton("Exportar resultados em csv")
-        self.button_export.setEnabled(False) # desabilita o botão inicialmente
-        vertical_layout.addWidget(self.button_export)
+        self.button_export_csv = QPushButton("Exportar resultados em csv")
+        self.button_export_csv.setEnabled(False) # desabilita o botão inicialmente
+        vertical_layout.addWidget(self.button_export_csv)
+        self.button_export_xlsx = QPushButton("Exportar resultados em xlsx")
+        self.button_export_xlsx.setEnabled(False) # desabilita o botão inicialmente
+        vertical_layout.addWidget(self.button_export_xlsx)
         vertical_layout.setAlignment(Qt.AlignTop) # alinha o layout ao topo
         vertical_layout.setContentsMargins(0, 0, 0, 0) # remove as margens
         vertical_layout.setSpacing(0) # remove o espaçamento
@@ -223,7 +226,8 @@ class QueryWindow(QMainWindow):
 
         # configura botão oculto para salvar csv
         self.table_results.itemChanged.connect(self.on_table_results_changed)
-        self.button_export.clicked.connect(self._save_csv)
+        self.button_export_csv.clicked.connect(self._save_csv)
+        self.button_export_xlsx.clicked.connect(self._save_xlsx)
 
         # armazenando a conexão com o banco de dados
         self.conn = conn
@@ -234,9 +238,11 @@ class QueryWindow(QMainWindow):
 
     def on_table_results_changed(self):
         if self.table_results.rowCount() > 0:
-            self.button_export.setEnabled(True)
+            self.button_export_csv.setEnabled(True)
+            self.button_export_xlsx.setEnabled(True)
         else:
-            self.button_export.setEnabled(False)
+            self.button_export_csv.setEnabled(False)
+            self.button_export_xlsx.setEnabled(False)
 
     def logout(self):
         # fechando a janela atual
@@ -316,7 +322,7 @@ class QueryWindow(QMainWindow):
             os.mkdir('./dados')
 
         try:
-            with open(f"dados/query_{timestamp}.csv", "w", newline="") as arquivo_csv:
+            with open(f"dados/csv_{timestamp}.csv", "w", newline="") as arquivo_csv:
 
                 escritor = csv.writer(arquivo_csv)
                 escritor.writerow(self.columns)
@@ -327,6 +333,27 @@ class QueryWindow(QMainWindow):
             self.show()
         except Exception as e:
             QMessageBox.warning(self, "Erro", str(e))
+
+
+
+
+    def _save_xlsx(self):
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        if not os.path.exists("./dados"):
+            os.mkdir('./dados')
+
+        try:
+            df = pd.DataFrame(self.results, columns=self.columns)
+            df.to_excel(f"dados/xlsx_{timestamp}.xlsx", index=False)
+
+            QMessageBox.information(self, "Sucesso", "Arquivo exportado")
+            self.close()
+            self.show()
+
+        except Exception as e:
+            QMessageBox.warning(self, "Erro", str(e))
+
 
 
 class DDLWindow(QMainWindow):
