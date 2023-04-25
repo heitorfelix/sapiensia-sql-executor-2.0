@@ -4,6 +4,7 @@ import os
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget,\
  QMessageBox, QTextEdit,QTableWidget, QListWidget, QAbstractItemView, QAction, QHBoxLayout, QTableWidgetItem,\
  QComboBox, QRadioButton 
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont, QColor, QIcon
 from pyodbc import ProgrammingError
 from datetime import datetime
@@ -187,19 +188,29 @@ class QueryWindow(QMainWindow):
         font = QFont("Consolas", 10)  # cria uma fonte com tamanho 10 e tipo Arial
         self.text_query.setFont(font)  # aplica a fonte ao widget QTextEdit
         ddl_layout.addWidget(self.button_run_query)
+        ddl_layout.setAlignment(Qt.AlignTop) # alinha os widgets ao topo
+        ddl_layout.setContentsMargins(0, 0, 0, 0) # remove as margens
+        ddl_layout.setSpacing(0) # remove o espaçamento
         vertical_layout.addLayout(ddl_layout)
 
         # Criando a tabela de resultados
+        results_layout = QVBoxLayout()
         self.table_results = QTableWidget()
-        vertical_layout.addWidget(self.table_results)
+        results_layout.addWidget(self.table_results)
+        results_layout.setAlignment(Qt.AlignTop) # alinha o layout ao topo
+        results_layout.setContentsMargins(0, 0, 0, 0) # remove as margens
+        results_layout.setSpacing(0) # remove o espaçamento
+        vertical_layout.addLayout(results_layout, stretch=1) # expande verticalmente
+        
 
         # criando o botão
         self.button_export = QPushButton("Exportar resultados em csv")
         self.button_export.setEnabled(False) # desabilita o botão inicialmente
-
-        # adicionando o botão ao layout
         vertical_layout.addWidget(self.button_export)
-        layout.addLayout(vertical_layout)
+        vertical_layout.setAlignment(Qt.AlignTop) # alinha o layout ao topo
+        vertical_layout.setContentsMargins(0, 0, 0, 0) # remove as margens
+        vertical_layout.setSpacing(0) # remove o espaçamento
+        layout.addLayout(vertical_layout, stretch=1) # expande verticalmente
 
         # criando o widget central
         widget = QWidget()
