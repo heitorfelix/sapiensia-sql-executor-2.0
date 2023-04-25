@@ -160,6 +160,7 @@ class QueryWindow(QMainWindow):
 
         # criando os widgets da tela de query
         self.label_select_db = QLabel("Selecionar banco(s) de dados:")
+        self.label_select_db.setFont(QFont("Arial", 10)) 
         self.list_select_db = QListWidget()
         self.list_select_db.setSelectionMode(QAbstractItemView.MultiSelection)
         self.list_select_db.addItems(conn.list_databases())
@@ -183,9 +184,6 @@ class QueryWindow(QMainWindow):
         ddl_layout.addWidget(label)
 
         ddl_layout.addWidget(self.text_query)
-        ddl_layout.setStretchFactor(self.text_query, 2)
-        ddl_height = self.geometry().height() // 4
-        self.text_query.setFixedHeight(ddl_height )
         font = QFont("Consolas", 10)  # cria uma fonte com tamanho 10 e tipo Arial
         self.text_query.setFont(font)  # aplica a fonte ao widget QTextEdit
         ddl_layout.addWidget(self.button_run_query)
@@ -371,6 +369,7 @@ class DDLWindow(QMainWindow):
 
         # criando os widgets da tela de query
         self.label_select_db = QLabel("Selecionar banco(s) de dados:")
+        self.label_select_db.setFont(QFont("Arial", 10)) 
         self.list_select_db = QListWidget()
         self.list_select_db.setSelectionMode(QAbstractItemView.MultiSelection)
         self.list_select_db.addItems(conn.list_databases())
@@ -394,9 +393,6 @@ class DDLWindow(QMainWindow):
 
         ddl_layout.addWidget(label)
         ddl_layout.addWidget(self.text_query)
-        ddl_layout.setStretchFactor(self.text_query, 2)
-        ddl_height = self.geometry().height() // 4
-        self.text_query.setFixedHeight(ddl_height )
         font = QFont("Arial", 10)  # cria uma fonte com tamanho 10 e tipo Arial
         self.text_query.setFont(font)  # aplica a fonte ao widget QTextEdit
         ddl_layout.addWidget(self.button_run_query)
