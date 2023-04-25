@@ -16,14 +16,18 @@ CURRENT_DIR = current_dir = os.path.dirname(os.path.abspath(__file__))
 
 # salvar os dados de login em um arquivo
 def save_login_data(server, username):
-    with open("login_data.pkl", "wb") as f:
+
+    if not os.path.exists("./login"):
+        os.mkdir('./login')
+
+    with open("./login/login_data.pkl", "wb") as f:
         login_data = {"server": server, "username": username}
         pickle.dump(login_data, f)
 
 # carregar os dados de login de um arquivo
 def load_login_data():
     try:
-        with open("login_data.pkl", "rb") as f:
+        with open("./login/login_data.pkl", "rb") as f:
             login_data = pickle.load(f)
             return login_data["server"], login_data["username"]
     except FileNotFoundError:
@@ -81,8 +85,7 @@ class LoginWindow(QMainWindow):
         self.button_login.clicked.connect(self.test_connection)
         
         # conectando os radio buttons ao slot de seleção
-        # self.radio_ddl_dml.toggled.connect(self.on_radio_toggled)
-        # self.radio_dql.toggled.connect(self.on_radio_toggled)
+
 
     def test_connection(self):
         # lendo os dados inseridos na tela de login
@@ -122,28 +125,28 @@ class QueryWindow(QMainWindow):
         logout_action.triggered.connect(self.logout)
         user_menu.addAction(logout_action)
         refresh_action = QAction(QIcon(os.path.join(CURRENT_DIR, 'icons', 'refresh.png')), 'Refresh', self)
-        refresh_action.triggered.connect(self.refresh_database_list)
+        refresh_action.triggered.connect(self._refresh_database_list)
         user_menu.addAction(refresh_action)
 
         # criando a ação de mudança de pagina ddl e query e adicionando no menu
         ddl_action = QAction('DDL', self)
-        ddl_action.triggered.connect(self.ddl_page)
+        ddl_action.triggered.connect(self._ddl_page)
         query_action = QAction('Query', self)
-        query_action.triggered.connect(self.query_page)
+        query_action.triggered.connect(self._query_page)
         page_menu.addAction(ddl_action)
         page_menu.addAction(query_action)
 
-    def ddl_page(self):
+    def _ddl_page(self):
         self.close()
         self.ddl_window = DDLWindow(self.conn)
         self.ddl_window.show()
 
-    def query_page(self):
+    def _query_page(self):
         self.close()
         self.query_window = QueryWindow(self.conn)
         self.query_window.show()
 
-    def refresh_database_list(self):
+    def _refresh_database_list(self):
         # limpa a lista atual de bancos de dados
         self.list_select_db.clear()
 
@@ -180,13 +183,11 @@ class QueryWindow(QMainWindow):
         # CAIXA DE DDL
         query_layout = QVBoxLayout()
         label = QLabel("Escreva uma query (DQL) para executar")
-        font = QFont("Arial", 10) #cria uma fonte com tamanho 12 e tipo Arial
-        label.setFont(font) #define a nova fonte com tamanho 12 no QLabel
+        label.setFont(QFont("Arial", 10)) #define a nova fonte com tamanho 12 no QLabel
         query_layout.addWidget(label)
 
         query_layout.addWidget(self.text_query)
-        font = QFont("Consolas", 10)  # cria uma fonte com tamanho 10 e tipo Arial
-        self.text_query.setFont(font)  # aplica a fonte ao widget QTextEdit
+        self.text_query.setFont(QFont("Consolas", 10))  # aplica a fonte ao widget QTextEdit
         query_layout.addWidget(self.button_run_query)
         query_layout.setAlignment(Qt.AlignTop) # alinha os widgets ao topo
         query_layout.setContentsMargins(0, 0, 0, 0) # remove as margens
@@ -222,7 +223,7 @@ class QueryWindow(QMainWindow):
 
         # configura botão oculto para salvar csv
         self.table_results.itemChanged.connect(self.on_table_results_changed)
-        self.button_export.clicked.connect(self.save_csv)
+        self.button_export.clicked.connect(self._save_csv)
 
         # armazenando a conexão com o banco de dados
         self.conn = conn
@@ -279,7 +280,7 @@ class QueryWindow(QMainWindow):
             self.table_results.setHorizontalHeaderLabels(columns)
         except ProgrammingError as e:
             QMessageBox.warning(self, f"Erro de Conexão em {sample_database}", str(e))
-            self.refresh_database_list()
+            self._refresh_database_list()
         # executando a query para cada banco selecionado
         results = []
 
@@ -307,7 +308,7 @@ class QueryWindow(QMainWindow):
         return results
         
 
-    def save_csv(self):
+    def _save_csv(self):
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
@@ -341,29 +342,29 @@ class DDLWindow(QMainWindow):
         logout_action.triggered.connect(self.logout)
         user_menu.addAction(logout_action)
         refresh_action = QAction(QIcon(os.path.join(CURRENT_DIR, 'icons', 'refresh.png')), 'Refresh', self)
-        refresh_action.triggered.connect(self.refresh_database_list)
+        refresh_action.triggered.connect(self._refresh_database_list)
         user_menu.addAction(refresh_action)
 
         # criando a ação de mudança de pagina ddl e query e adicionando no menu
         ddl_action = QAction('DDL', self)
-        ddl_action.triggered.connect(self.ddl_page)
+        ddl_action.triggered.connect(self._ddl_page)
         query_action = QAction('Query', self)
-        query_action.triggered.connect(self.query_page)
+        query_action.triggered.connect(self._query_page)
         page_menu.addAction(ddl_action)
         page_menu.addAction(query_action)
         
-    def ddl_page(self):
+    def _ddl_page(self):
         self.close()
         self.ddl_window = DDLWindow(self.conn)
         self.ddl_window.show()
 
-    def query_page(self):
+    def _query_page(self):
         self.close()
         self.query_window = QueryWindow(self.conn)
         self.query_window.show()
 
 
-    def refresh_database_list(self):
+    def _refresh_database_list(self):
         # limpa a lista atual de bancos de dados
         self.list_select_db.clear()
 
@@ -400,13 +401,11 @@ class DDLWindow(QMainWindow):
         # CAIXA DE DDL
         ddl_layout = QVBoxLayout()
         label = QLabel("Escreva um comando DDL/DML para executar")
-        font = QFont("Arial", 10) #cria uma fonte com tamanho 12 e tipo Arial
-        label.setFont(font) #define a nova fonte com tamanho 12 no QLabel
+        label.setFont(QFont("Arial", 10)) #define a nova fonte com tamanho 12 no QLabel
         ddl_layout.addWidget(label)
 
         ddl_layout.addWidget(self.text_query)
-        font = QFont("Consolas", 10)  # cria uma fonte com tamanho 10 e tipo Arial
-        self.text_query.setFont(font)  # aplica a fonte ao widget QTextEdit
+        self.text_query.setFont(QFont("Consolas", 10))  # aplica a fonte ao widget QTextEdit
         ddl_layout.addWidget(self.button_run_query)
         ddl_layout.setAlignment(Qt.AlignTop)
         ddl_layout.setContentsMargins(0,0,0,0)
@@ -471,7 +470,7 @@ class DDLWindow(QMainWindow):
                 # armazenando a mensagem de erro
                 results.append((db_name, str(e)))
 
-        results = self.sort_results(results)
+        results = self._sort_results(results)
         # preenchendo a tabela com os resultados
         self.table_results.setRowCount(len(results))
         for row, result in enumerate(results):
@@ -492,7 +491,7 @@ class DDLWindow(QMainWindow):
         num_sucessos = sum(sucessos)
         return results
         
-    def sort_results(self, results):
+    def _sort_results(self, results):
         sucesso = []
         fail = []
 
