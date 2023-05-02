@@ -59,7 +59,7 @@ class Conexao:
     
     def execute_ddl(self, database, query):
 
-        ddl_keywords = ['alter', 'create', 'drop', 'truncate', 'rename', 'insert', 'grant', 'revoke']
+        ddl_keywords = ['alter', 'create', 'drop', 'truncate', 'rename', 'insert', 'grant', 'revoke', 'exec']
 
         if query.split()[0].lower() not in ddl_keywords:
             raise QueryError("This application only accepts DDL queries")
