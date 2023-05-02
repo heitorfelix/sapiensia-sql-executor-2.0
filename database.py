@@ -131,21 +131,9 @@ class Conexao:
             # Montar a lista de tuplas com o nome do banco e o resultado
             result = [(db_name,) + tuple(row) for row in rows]
 
-
         except ProgrammingError as e:
             result = "Error: " + str(e)
             
         # Fechar a conexão com o banco
         conn.close()
-
         return result
-
-
-    
-    def execute_query_in_databases(self, databases, query):
-        
-        for database in databases:
-            db_name, result = self.execute_query(database, query)
-            print('Database:', db_name)
-            print('Result:', result)
-            time.sleep(3)

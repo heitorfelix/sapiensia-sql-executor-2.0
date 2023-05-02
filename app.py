@@ -259,59 +259,56 @@ class QueryWindow(QMainWindow):
         # obtendo os bancos selecionados
         selected_databases = [self.list_select_db.item(i).text() for i in range(self.list_select_db.count()) if self.list_select_db.item(i).isSelected()]
 
-        if selected_databases: 
-            columns = ['DatabaseName']
-
-            
-            for sample_database in selected_databases: 
-                find_columns_test = self.conn.execute_query(sample_database, query)
-
-                if "Error: " in find_columns_test: # armazenando a mensagem de erro
-                    sample_database = None
-                else:
-                    break
-
-            if not sample_database:
-                QMessageBox.critical(self, f"Erro", "A tabela não existem em nenhum database ")
-
-        else:
+        if not selected_databases: 
             QMessageBox.warning(self, f"Erro", "Selecione algum database ")
-            self.close()
-            self.show()
             return None
 
-        try:
-            columns += self.conn.get_columns(sample_database, query)
-            self.table_results.setColumnCount(len(columns) )
-            self.table_results.setHorizontalHeaderLabels(columns)
-        except ProgrammingError as e:
-            QMessageBox.warning(self, f"Erro de Conexão em {sample_database}", str(e))
-            self._refresh_database_list()
-        # executando a query para cada banco selecionado
         results = []
-
+        columns = ['DatabaseName']
         for db_name in selected_databases:
+            try:
+                find_columns_test = self.conn.execute_query(db_name, query)
+            except Exception as e:
+                # erro de conexão com o banco de dados
+                QMessageBox.warning(self, f"Erro de conexão em {db_name}", f"Houve um problema de conexão com o banco de dados {db_name}. Verifique se as credenciais de acesso são válidas e se o banco de dados está em funcionamento.")
+                return None
+            
+            if "Error: " in find_columns_test: # armazenando a mensagem de erro
+                QMessageBox.warning(self, f"Erro em {db_name}", find_columns_test)
+                continue
+
+            # o banco de dados foi acessado com sucesso
+            db_columns = []
+            try:
+                db_columns = self.conn.get_columns(db_name, query)
+            except ProgrammingError as e:
+                # erro ao obter as colunas da consulta
+                QMessageBox.warning(self, f"Erro em {db_name}", str(e))
+
+            columns += db_columns
             result = self.conn.execute_query(db_name, query)
-            if "Error: " in result: # armazenando a mensagem de erro
-                results.append((db_name, ) + len(columns) * (result,))
-            else:
-                results = results + result  # armazenando os resultados da query
-                
+            results += result
+
+        if not results:
+            QMessageBox.critical(self, f"Erro", "A tabela não existe em nenhum database.")
+
         # preenchendo a tabela com os resultados
         self.table_results.setRowCount(len(results))
+        self.table_results.setColumnCount(len(columns))
+        self.table_results.setHorizontalHeaderLabels(columns)
         for row, result in enumerate(results):
             for column, item in enumerate(result):
                 self.table_results.setItem(row, column, QTableWidgetItem(str(item)))
         # ajustando o tamanho das colunas para exibir os dados completos
-
         self.table_results.resizeColumnToContents(0)
         self.table_results.resizeRowsToContents()
         self.table_results.horizontalHeader().setStretchLastSection(True) # estica a ultima coluna para preencher o espaço disponível
-        
+
         # armazenando em memória
         self.results = results
         self.columns = columns
         return results
+
         
 
     def _save_csv(self):
