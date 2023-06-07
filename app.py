@@ -285,10 +285,11 @@ class QueryWindow(QMainWindow):
                 # erro ao obter as colunas da consulta
                 QMessageBox.warning(self, f"Erro em {db_name}", str(e))
 
-            columns += db_columns
+            
             result = self.conn.execute_query(db_name, query)
             results += result
-
+        columns += db_columns
+        
         if not results:
             QMessageBox.critical(self, f"Erro", "A tabela não existe em nenhum database.")
 
