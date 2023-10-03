@@ -264,7 +264,8 @@ class QueryWindow(QMainWindow):
             return None
 
         results = []
-        unique_columns = set()  # Conjunto para armazenar colunas únicas
+        columns = ['DatabaseName']
+        db_columns = []
 
         for db_name in selected_databases:
             try:
@@ -278,8 +279,6 @@ class QueryWindow(QMainWindow):
                 QMessageBox.warning(self, f"Erro em {db_name}", find_columns_test)
                 continue
 
-            # O banco de dados foi acessado com sucesso
-            db_columns = []
             try:
                 db_columns = self.conn.get_columns(db_name, query)
             except ProgrammingError as e:
@@ -289,14 +288,14 @@ class QueryWindow(QMainWindow):
             result = self.conn.execute_query(db_name, query)
             results += result
             
-            # Adicionar colunas únicas ao conjunto
-            unique_columns.update(db_columns)
-
-        # Converter o conjunto de colunas únicas de volta para uma lista
-        columns = ['DatabaseName'] + list(unique_columns)
+        if db_columns:
+            for col in db_columns:
+                if col not in columns:
+                    columns.append(col)
+        
 
         if not results:
-            QMessageBox.critical(self, f"Erro", "A tabela não existe em nenhum database.")
+            QMessageBox.critical(self, f"Erro", "A tabela não existe em nenhum database ou há algum problema nesta consulta")
 
         # Preenchendo a tabela com os resultados
         self.table_results.setRowCount(len(results))
