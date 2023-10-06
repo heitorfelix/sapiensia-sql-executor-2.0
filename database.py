@@ -33,9 +33,11 @@ class Conexao:
                 cursor.fetchone()
                 
             self.conn_str = conn_str
+            print('Conexão estabelecida')
             return True
         
-        except pyodbc.Error:
+        except pyodbc.Error as e:
+            print('Conexão não funcionou')
             return False
 
     def list_databases(self):
@@ -51,7 +53,7 @@ class Conexao:
                 cursor.execute(query)
                 results = cursor.fetchall()
                 results = [result[0] for result in results]
-                print(results)
+                
             return results 
         
         except Exception as e:

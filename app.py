@@ -165,15 +165,25 @@ class QueryWindow(QMainWindow):
         # criando os widgets da tela de query
         self.label_select_db = QLabel("Selecionar banco(s) de dados:")
         self.label_select_db.setFont(QFont("Arial", 10)) 
+
+        # Criando a barra de pesquisa
+        self.search_bar = QLineEdit()
+        self.search_bar.setPlaceholderText("Pesquisar bancos de dados...")
+        self.search_bar.textChanged.connect(self.filter_databases)
+        
+
         self.list_select_db = QListWidget()
         self.list_select_db.setSelectionMode(QAbstractItemView.MultiSelection)
         self.list_select_db.addItems(conn.list_databases())
         self.text_query = QTextEdit()
         self.button_run_query = QPushButton("Executar")
 
+        
+
         # criando o layout da tela de query
         layout = QHBoxLayout()
         menu_layout = QVBoxLayout()
+        menu_layout.addWidget(self.search_bar)
         menu_layout.addWidget(self.label_select_db)
         menu_layout.addWidget(self.list_select_db)
         layout.addLayout(menu_layout)
@@ -235,6 +245,22 @@ class QueryWindow(QMainWindow):
         # adicionando widget de status para exibir informações de usuário e servidor
         status_label = QLabel(f"Usuário: {self.conn.user} - Servidor: {self.conn.server}")
         self.statusBar().addWidget(status_label)
+
+    def filter_databases(self):
+        # Obtendo o texto da barra de pesquisa
+        search_text = self.search_bar.text().strip().lower()
+
+        # Obtendo todos os bancos de dados disponíveis
+        all_databases = self.conn.list_databases()
+
+        # Filtrando os bancos de dados que correspondem ao texto da pesquisa
+        filtered_databases = [db for db in all_databases if search_text in db.lower()]
+
+        # Limpando a lista de seleção
+        self.list_select_db.clear()
+
+        # Adicionando os bancos de dados filtrados à lista de seleção
+        self.list_select_db.addItems(filtered_databases)
 
     def on_table_results_changed(self):
         if self.table_results.rowCount() > 0:
@@ -316,7 +342,6 @@ class QueryWindow(QMainWindow):
         self.columns = columns
         return results
 
-        
 
     def _save_csv(self):
 
@@ -420,9 +445,16 @@ class DDLWindow(QMainWindow):
         self.text_query = QTextEdit()
         self.button_run_query = QPushButton("Executar")
 
+        # Criando a barra de pesquisa
+        self.search_bar = QLineEdit()
+        self.search_bar.setPlaceholderText("Pesquisar bancos de dados...")
+        self.search_bar.textChanged.connect(self.filter_databases)
+
         # criando o layout da tela de query
         layout = QHBoxLayout()
         menu_layout = QVBoxLayout()
+        menu_layout.addWidget(self.search_bar)
+
         menu_layout.addWidget(self.label_select_db)
         menu_layout.addWidget(self.list_select_db)
         layout.addLayout(menu_layout)
@@ -474,6 +506,22 @@ class DDLWindow(QMainWindow):
         status_label = QLabel(f"Usuário: {self.conn.user} - Servidor: {self.conn.server}")
         self.statusBar().addWidget(status_label)
 
+
+    def filter_databases(self):
+        # Obtendo o texto da barra de pesquisa
+        search_text = self.search_bar.text().strip().lower()
+
+        # Obtendo todos os bancos de dados disponíveis
+        all_databases = self.conn.list_databases()
+
+        # Filtrando os bancos de dados que correspondem ao texto da pesquisa
+        filtered_databases = [db for db in all_databases if search_text in db.lower()]
+
+        # Limpando a lista de seleção
+        self.list_select_db.clear()
+
+        # Adicionando os bancos de dados filtrados à lista de seleção
+        self.list_select_db.addItems(filtered_databases)
     def logout(self):
         # fechando a janela atual
         self.close()
