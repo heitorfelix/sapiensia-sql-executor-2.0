@@ -1,4 +1,4 @@
 pip install virtualenv
-python  python -m venv myenv
-myenv/Scripts/activate.bat
+virtualenv myenv
+source myenv/bin/activate
 pip install -r requirements.txt
