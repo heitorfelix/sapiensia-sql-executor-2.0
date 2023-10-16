@@ -1,19 +1,20 @@
 import sys
 import csv
 import os
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget,\
- QMessageBox, QTextEdit,QTableWidget, QListWidget, QAbstractItemView, QAction, QHBoxLayout, QTableWidgetItem,\
-  QRadioButton 
+
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QLabel, QLineEdit, QPushButton,
+                            QVBoxLayout, QWidget, QMessageBox, QTextEdit, QTableWidget,
+                            QListWidget, QAbstractItemView, QAction, QHBoxLayout,
+                            QTableWidgetItem, QRadioButton)
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont, QColor, QIcon
+
 from pyodbc import ProgrammingError
 from datetime import datetime
-
 import pandas as pd
-
 from utils.database import Conexao
 from utils.utils import save_login_data, load_login_data
-import sys
+
 
 CURRENT_DIR = current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -25,7 +26,7 @@ class BaseWindow(QMainWindow):
         self.create_menu_bar()
         self.setGeometry(100, 100, 800, 600)
 
-        self.label_select_db = self.create_label("Selecionar banco(s) de dados:")
+        # self.label_select_db = self.create_label("Selecionar banco(s) de dados:")
         self.create_widgets()
         self.create_database_list_widget()
         self.create_search_bar()
@@ -85,11 +86,7 @@ class BaseWindow(QMainWindow):
         self.query_window.show()
 
     def create_widgets(self):
-        self.label_select_db = QLabel("Selecionar banco(s) de dados:")
-        self.label_select_db.setFont(QFont("Arial", 10)) 
-        self.list_select_db = QListWidget()
-        self.list_select_db.setSelectionMode(QAbstractItemView.MultiSelection)
-        self.list_select_db.addItems(self.conn.list_databases())
+         
         self.text_query = QTextEdit()
         self.button_run_query = QPushButton("Executar")
 
@@ -99,6 +96,7 @@ class BaseWindow(QMainWindow):
         self.search_bar.textChanged.connect(self.filter_databases)
        
     def create_database_list_widget(self):
+        self.label_select_db = self.create_label("Selecionar banco(s) de dados:")
         self.list_select_db = QListWidget()
         self.list_select_db.setSelectionMode(QAbstractItemView.MultiSelection)
         self.list_select_db.addItems(self.conn.list_databases())
@@ -112,14 +110,14 @@ class BaseWindow(QMainWindow):
     
     def create_query_layout(self):
         # criando o layout da tela de query
-        layout = QHBoxLayout()
+        self.layout = QHBoxLayout()
         menu_layout = QVBoxLayout()
         menu_layout.addWidget(self.search_bar)
 
         menu_layout.addWidget(self.label_select_db)
         menu_layout.addWidget(self.list_select_db)
-        layout.addLayout(menu_layout)
-        return layout
+        self.layout.addLayout(menu_layout)
+        
 
     def filter_databases(self):
         # Obtendo o texto da barra de pesquisa
@@ -144,14 +142,13 @@ class DDLWindow(BaseWindow):  # DDLWindow herda de BaseWindow
         super().__init__(conn)  # Chama o construtor da BaseWindow
         self.setWindowTitle("DDL Window")
 
-        layout = self.create_query_layout()
         vertical_layout = self.create_vertical_ddl_layout()
 
-        layout.addLayout(vertical_layout, stretch=1) # expande verticalmente
+        self.layout.addLayout(vertical_layout, stretch=1) # expande verticalmente
 
         # criando o widget central
         widget = QWidget()
-        widget.setLayout(layout)
+        widget.setLayout(self.layout)
         self.setCentralWidget(widget)
 
         # conectando o botão de executar query ao método correspondente
@@ -162,8 +159,8 @@ class DDLWindow(BaseWindow):  # DDLWindow herda de BaseWindow
 
         # CAIXA DE DDL
         ddl_layout = QVBoxLayout()
-        label = QLabel("Escreva um comando DDL/DML para executar")
-        label.setFont(QFont("Arial", 10)) #define a nova fonte com tamanho 12 no QLabel
+        
+        label = self.create_label("Escreva um comando DDL/DML para executar")
         ddl_layout.addWidget(label)
 
         ddl_layout.addWidget(self.text_query)
@@ -227,7 +224,7 @@ class DDLWindow(BaseWindow):  # DDLWindow herda de BaseWindow
         self.table_results.horizontalHeader().setStretchLastSection(True) # estica a ultima coluna para preencher o espaço disponível
 
         sucessos = [result[1] == 'Executado com sucesso' for result in results]
-        num_sucessos = sum(sucessos)
+        
         return results
         
     def _sort_results(self, results):
@@ -247,25 +244,24 @@ class DDLWindow(BaseWindow):  # DDLWindow herda de BaseWindow
         results = fail + sucesso
         return results
 
-class DQLWindow(BaseWindow):  # DDLWindow herda de BaseWindow
+class DQLWindow(BaseWindow):  # DQLWindow herda de BaseWindow
 
     def __init__(self, conn):
         super().__init__(conn)  # Chama o construtor da BaseWindow
-        self.setWindowTitle("DDL Window")
+        self.setWindowTitle("DQL Window")
 
-        layout = self.create_query_layout()
+        
         vertical_layout = self.create_vertical_dql_layout()
 
-        layout.addLayout(vertical_layout, stretch=1) # expande verticalmente
+        self.layout.addLayout(vertical_layout, stretch=1) # expande verticalmente
 
         # criando o widget central
         widget = QWidget()
-        widget.setLayout(layout)
+        widget.setLayout(self.layout)
         self.setCentralWidget(widget)
 
         # conectando o botão de executar query ao método correspondente
         self.button_run_query.clicked.connect(self.on_button_run_query_clicked)
-
         self.configure_export_buttons()
 
 
@@ -274,8 +270,7 @@ class DQLWindow(BaseWindow):  # DDLWindow herda de BaseWindow
 
         # CAIXA DE DDL
         query_layout = QVBoxLayout()
-        label = QLabel("Escreva uma query (DQL) para executar")
-        label.setFont(QFont("Arial", 10)) #define a nova fonte com tamanho 12 no QLabel
+        label = self.create_label("Escreva uma query (DQL) para executar")
         query_layout.addWidget(label)
 
         query_layout.addWidget(self.text_query)
@@ -371,7 +366,6 @@ class DQLWindow(BaseWindow):  # DDLWindow herda de BaseWindow
         self.results = results
         self.columns = columns
         return results
-
 
     def configure_export_buttons(self):
             # configura botão oculto para salvar csv
@@ -474,7 +468,6 @@ class LoginWindow(QMainWindow):
         # conectando o botão de login à função de teste de conexão
         self.button_login.clicked.connect(self.test_connection)
         
-        # conectando os radio buttons ao slot de seleção
 
 
     def test_connection(self):
