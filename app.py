@@ -5,7 +5,7 @@ import os
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QLabel, QLineEdit, QPushButton,
                             QVBoxLayout, QWidget, QMessageBox, QTextEdit, QTableWidget,
                             QListWidget, QAbstractItemView, QAction, QHBoxLayout,
-                            QTableWidgetItem, QRadioButton)
+                            QTableWidgetItem, QRadioButton, QSplitter)
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont, QColor, QIcon
 
@@ -16,7 +16,7 @@ from utils.database import Conexao
 from utils.utils import save_login_data, load_login_data
 
 
-CURRENT_DIR = current_dir = os.path.dirname(os.path.abspath(__file__))
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 class BaseWindow(QMainWindow):
@@ -26,15 +26,15 @@ class BaseWindow(QMainWindow):
         self.create_menu_bar()
         self.setGeometry(100, 100, 800, 600)
 
-        # self.label_select_db = self.create_label("Selecionar banco(s) de dados:")
         self.create_widgets()
         self.create_database_list_widget()
         self.create_search_bar()
         self.create_query_layout()
 
-        self.create_status_bar()
+        self.create_status_bar()        
         
     def create_status_bar(self):
+        """ Rodapé da página """
         # adicionando widget de status para exibir informações de usuário e servidor
         status_label = QLabel(f"Usuário: {self.conn.user} - Servidor: {self.conn.server}")
         self.statusBar().addWidget(status_label)
@@ -86,7 +86,6 @@ class BaseWindow(QMainWindow):
         self.query_window.show()
 
     def create_widgets(self):
-         
         self.text_query = QTextEdit()
         self.button_run_query = QPushButton("Executar")
 
@@ -100,8 +99,6 @@ class BaseWindow(QMainWindow):
         self.list_select_db = QListWidget()
         self.list_select_db.setSelectionMode(QAbstractItemView.MultiSelection)
         self.list_select_db.addItems(self.conn.list_databases())
-        self.text_query = QTextEdit()
-        self.button_run_query = QPushButton("Executar")
         
     def create_label(self, text):
         label = QLabel(text)
@@ -117,7 +114,6 @@ class BaseWindow(QMainWindow):
         menu_layout.addWidget(self.label_select_db)
         menu_layout.addWidget(self.list_select_db)
         self.layout.addLayout(menu_layout)
-        
 
     def filter_databases(self):
         # Obtendo o texto da barra de pesquisa
@@ -144,7 +140,7 @@ class DDLWindow(BaseWindow):  # DDLWindow herda de BaseWindow
 
         vertical_layout = self.create_vertical_ddl_layout()
 
-        self.layout.addLayout(vertical_layout, stretch=1) # expande verticalmente
+        self.layout.addWidget(vertical_layout, stretch=1) # expande verticalmente
 
         # criando o widget central
         widget = QWidget()
@@ -155,7 +151,12 @@ class DDLWindow(BaseWindow):  # DDLWindow herda de BaseWindow
         self.button_run_query.clicked.connect(self.on_button_run_query_clicked)
  
     def create_vertical_ddl_layout(self):
-        vertical_layout = QVBoxLayout()
+
+        # Cria um QSplitter vertical
+        splitter = QSplitter()
+        splitter.setOrientation(0)  #0: Vertical
+
+        #vertical_layout = QVBoxLayout()
 
         # CAIXA DE DDL
         ddl_layout = QVBoxLayout()
@@ -169,7 +170,9 @@ class DDLWindow(BaseWindow):  # DDLWindow herda de BaseWindow
         ddl_layout.setAlignment(Qt.AlignTop)
         ddl_layout.setContentsMargins(0,0,0,0)
         ddl_layout.setSpacing(0)
-        vertical_layout.addLayout(ddl_layout)
+        ddl_widget = QWidget()
+        ddl_widget.setLayout(ddl_layout)
+        splitter.addWidget(ddl_widget)
 
         # Criando a tabela de resultados
         results_layout = QVBoxLayout()
@@ -178,14 +181,14 @@ class DDLWindow(BaseWindow):  # DDLWindow herda de BaseWindow
         results_layout.setAlignment(Qt.AlignTop) # alinha o layout ao topo
         results_layout.setContentsMargins(0, 0, 0, 0) # remove as margens
         results_layout.setSpacing(0) # remove o espaçamento
-        vertical_layout.addLayout(results_layout, stretch=1) # expande verticalmente
-
+        
         self.table_results.setColumnCount(2)
         self.table_results.setHorizontalHeaderLabels(["Banco de dados", "Resultados"])
-        vertical_layout.setAlignment(Qt.AlignTop) # alinha o layout ao topo
-        vertical_layout.setContentsMargins(0, 0, 0, 0) # remove as margens
-        vertical_layout.setSpacing(0) # remove o espaçamento
-        return vertical_layout
+        results_widget = QWidget()
+        results_widget.setLayout(results_layout)
+        splitter.addWidget(results_widget)
+
+        return splitter
     
     def on_button_run_query_clicked(self):
         # obtendo a query a ser executada
