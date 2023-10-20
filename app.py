@@ -251,10 +251,9 @@ class DQLWindow(BaseWindow):  # DQLWindow herda de BaseWindow
         super().__init__(conn)  # Chama o construtor da BaseWindow
         self.setWindowTitle("DQL Window")
 
-        
         vertical_layout = self.create_vertical_dql_layout()
 
-        self.layout.addLayout(vertical_layout, stretch=1) # expande verticalmente
+        self.layout.addWidget(vertical_layout, stretch=1) # expande verticalmente
 
         # criando o widget central
         widget = QWidget()
@@ -269,6 +268,10 @@ class DQLWindow(BaseWindow):  # DQLWindow herda de BaseWindow
     def create_vertical_dql_layout(self):
         vertical_layout = QVBoxLayout()
 
+        # Cria um QSplitter vertical
+        splitter = QSplitter()
+        splitter.setOrientation(0)  #0: Vertical
+
         # CAIXA DE DDL
         query_layout = QVBoxLayout()
         label = self.create_label("Escreva uma query (DQL) para executar")
@@ -280,7 +283,10 @@ class DQLWindow(BaseWindow):  # DQLWindow herda de BaseWindow
         query_layout.setAlignment(Qt.AlignTop) # alinha os widgets ao topo
         query_layout.setContentsMargins(0, 0, 0, 0) # remove as margens
         query_layout.setSpacing(0) # remove o espaçamento
-        vertical_layout.addLayout(query_layout)
+        query_widget = QWidget()
+        query_widget.setLayout(query_layout)
+
+        splitter.addWidget(query_widget)
 
         # Criando a tabela de resultados
         results_layout = QVBoxLayout()
@@ -289,20 +295,23 @@ class DQLWindow(BaseWindow):  # DQLWindow herda de BaseWindow
         results_layout.setAlignment(Qt.AlignTop) # alinha o layout ao topo
         results_layout.setContentsMargins(0, 0, 0, 0) # remove as margens
         results_layout.setSpacing(0) # remove o espaçamento
-        vertical_layout.addLayout(results_layout, stretch=1) # expande verticalmente
-        
+
 
         # criando o botão
         self.button_export_csv = QPushButton("Exportar resultados em csv")
         self.button_export_csv.setEnabled(False) # desabilita o botão inicialmente
-        vertical_layout.addWidget(self.button_export_csv)
+        results_layout.addWidget(self.button_export_csv)
+        ##splitter.addWidget(self.button_export_csv)
+
         self.button_export_xlsx = QPushButton("Exportar resultados em xlsx")
         self.button_export_xlsx.setEnabled(False) # desabilita o botão inicialmente
-        vertical_layout.addWidget(self.button_export_xlsx)
-        vertical_layout.setAlignment(Qt.AlignTop) # alinha o layout ao topo
-        vertical_layout.setContentsMargins(0, 0, 0, 0) # remove as margens
-        vertical_layout.setSpacing(0) # remove o espaçamento
-        return vertical_layout
+        results_layout.addWidget(self.button_export_xlsx)
+        #splitter.addWidget(self.button_export_xlsx)
+
+        results_widget = QWidget()
+        results_widget.setLayout(results_layout)
+        splitter.addWidget(results_widget)
+        return splitter
   
     def on_button_run_query_clicked(self):
         # Obtendo a query a ser executada
