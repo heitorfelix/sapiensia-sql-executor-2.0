@@ -156,8 +156,6 @@ class DDLWindow(BaseWindow):  # DDLWindow herda de BaseWindow
         splitter = QSplitter()
         splitter.setOrientation(0)  #0: Vertical
 
-        #vertical_layout = QVBoxLayout()
-
         # CAIXA DE DDL
         ddl_layout = QVBoxLayout()
         
