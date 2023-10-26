@@ -6,8 +6,8 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QLabel, QLineEdit, QPush
                             QVBoxLayout, QWidget, QMessageBox, QTextEdit, QTableWidget,
                             QListWidget, QAbstractItemView, QAction, QHBoxLayout,
                             QTableWidgetItem, QRadioButton, QSplitter)
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont, QColor, QIcon
+from PyQt5.QtCore import Qt, QRect
+from PyQt5.QtGui import QFont, QColor, QIcon, QScreen
 
 from pyodbc import ProgrammingError
 from datetime import datetime
@@ -24,7 +24,7 @@ class BaseWindow(QMainWindow):
         super().__init__()
         self.conn = conn
         self.create_menu_bar()
-        self.setGeometry(100, 100, 800, 600)
+        self.setGeometry(GEOMETRY_BASE_WINDOW)
 
         self.create_widgets()
         self.create_database_list_widget()
@@ -32,7 +32,8 @@ class BaseWindow(QMainWindow):
         self.create_query_layout()
 
         self.create_status_bar()        
-        
+        self.create_export_button()
+
     def create_status_bar(self):
         """ Rodapé da página """
         # adicionando widget de status para exibir informações de usuário e servidor
@@ -131,6 +132,64 @@ class BaseWindow(QMainWindow):
         # Adicionando os bancos de dados filtrados à lista de seleção
         self.list_select_db.addItems(filtered_databases)
 
+    def create_export_button(self):
+        # criando o botão
+        self.button_export_csv = QPushButton("Exportar resultados em csv")
+        self.button_export_csv.setEnabled(False) # desabilita o botão inicialmente
+        self.button_export_xlsx = QPushButton("Exportar resultados em xlsx")
+        self.button_export_xlsx.setEnabled(False) # desabilita o botão inicialmente
+
+
+    def configure_export_buttons(self):
+            # configura botão oculto para salvar csv
+        self.table_results.itemChanged.connect(self.on_table_results_changed)
+        self.button_export_csv.clicked.connect(self.save_csv)
+        self.button_export_xlsx.clicked.connect(self.save_xlsx)
+
+    def save_csv(self):
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        if not os.path.exists("./dados"):
+            os.mkdir('./dados')
+
+        try:
+            with open(f"dados/csv_{timestamp}.csv", "w", newline="") as arquivo_csv:
+
+                escritor = csv.writer(arquivo_csv)
+                escritor.writerow(self.columns)
+                for tupla in self.results:
+                    escritor.writerow(tupla)
+            QMessageBox.information(self, "Sucesso", "Arquivo exportado")
+            self.close()
+            self.show()
+        except Exception as e:
+            QMessageBox.warning(self, "Erro", str(e))
+
+    def save_xlsx(self):
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        if not os.path.exists("./dados"):
+            os.mkdir('./dados')
+
+        try:
+            df = pd.DataFrame(self.results, columns=self.columns)
+            df.to_excel(f"dados/xlsx_{timestamp}.xlsx", index=False)
+
+            QMessageBox.information(self, "Sucesso", "Arquivo exportado")
+            self.close()
+            self.show()
+
+        except Exception as e:
+            QMessageBox.warning(self, "Erro", str(e))
+
+    def on_table_results_changed(self):
+        if self.table_results.rowCount() > 0:
+            self.button_export_csv.setEnabled(True)
+            self.button_export_xlsx.setEnabled(True)
+        else:
+            self.button_export_csv.setEnabled(False)
+            self.button_export_xlsx.setEnabled(False)
 
 class DDLWindow(BaseWindow):  # DDLWindow herda de BaseWindow
 
@@ -149,6 +208,7 @@ class DDLWindow(BaseWindow):  # DDLWindow herda de BaseWindow
 
         # conectando o botão de executar query ao método correspondente
         self.button_run_query.clicked.connect(self.on_button_run_query_clicked)
+        self.configure_export_buttons()
  
     def create_vertical_ddl_layout(self):
 
@@ -176,12 +236,15 @@ class DDLWindow(BaseWindow):  # DDLWindow herda de BaseWindow
         results_layout = QVBoxLayout()
         self.table_results = QTableWidget()
         results_layout.addWidget(self.table_results)
+        results_layout.addWidget(self.button_export_csv)
+        results_layout.addWidget(self.button_export_xlsx)
         results_layout.setAlignment(Qt.AlignTop) # alinha o layout ao topo
         results_layout.setContentsMargins(0, 0, 0, 0) # remove as margens
         results_layout.setSpacing(0) # remove o espaçamento
         
         self.table_results.setColumnCount(2)
-        self.table_results.setHorizontalHeaderLabels(["Banco de dados", "Resultados"])
+        self.columns = ["Banco de dados", "Resultados"]
+        self.table_results.setHorizontalHeaderLabels(self.columns)
         results_widget = QWidget()
         results_widget.setLayout(results_layout)
         splitter.addWidget(results_widget)
@@ -196,21 +259,21 @@ class DDLWindow(BaseWindow):  # DDLWindow herda de BaseWindow
         selected_databases = [self.list_select_db.item(i).text() for i in range(self.list_select_db.count()) if self.list_select_db.item(i).isSelected()]
 
         # executando a query para cada banco selecionado
-        results = []
+        self.results = []
 
         for db_name in selected_databases:
             try:
                 # executando a query
                 result = self.conn.execute_ddl(db_name, query)
-                results.append(result)
+                self.results.append(result)
             except Exception as e:
                 # armazenando a mensagem de erro
-                results.append((db_name, str(e)))
+                self.results.append((db_name, str(e)))
 
-        results = self._sort_results(results)
+        self._sort_results()
         # preenchendo a tabela com os resultados
-        self.table_results.setRowCount(len(results))
-        for row, result in enumerate(results):
+        self.table_results.setRowCount(len(self.results))
+        for row, result in enumerate(self.results):
             self.table_results.setItem(row, 0, QTableWidgetItem(result[0]))
             item = QTableWidgetItem(str(result[1]))
             if result[1] == 'Executado com sucesso':
@@ -223,16 +286,13 @@ class DDLWindow(BaseWindow):  # DDLWindow herda de BaseWindow
         self.table_results.resizeColumnToContents(0)
         self.table_results.resizeRowsToContents()
         self.table_results.horizontalHeader().setStretchLastSection(True) # estica a ultima coluna para preencher o espaço disponível
-
-        sucessos = [result[1] == 'Executado com sucesso' for result in results]
+        sucessos = [result[1] == 'Executado com sucesso' for result in self.results]
         
-        return results
-        
-    def _sort_results(self, results):
+    def _sort_results(self):
         sucesso = []
         fail = []
 
-        for item in results:
+        for item in self.results:
 
             db_name = item[0]
             result = item[1]
@@ -242,8 +302,7 @@ class DDLWindow(BaseWindow):  # DDLWindow herda de BaseWindow
             else:
                 fail.append((db_name, result))
 
-        results = fail + sucesso
-        return results
+        self.results = fail + sucesso
 
 class DQLWindow(BaseWindow):  # DQLWindow herda de BaseWindow
 
@@ -296,12 +355,10 @@ class DQLWindow(BaseWindow):  # DQLWindow herda de BaseWindow
         results_layout.setContentsMargins(0, 0, 0, 0) # remove as margens
         results_layout.setSpacing(0) # remove o espaçamento
 
-
         # criando o botão
         self.button_export_csv = QPushButton("Exportar resultados em csv")
         self.button_export_csv.setEnabled(False) # desabilita o botão inicialmente
         results_layout.addWidget(self.button_export_csv)
-        ##splitter.addWidget(self.button_export_csv)
 
         self.button_export_xlsx = QPushButton("Exportar resultados em xlsx")
         self.button_export_xlsx.setEnabled(False) # desabilita o botão inicialmente
@@ -377,64 +434,13 @@ class DQLWindow(BaseWindow):  # DQLWindow herda de BaseWindow
         self.columns = columns
         return results
 
-    def configure_export_buttons(self):
-            # configura botão oculto para salvar csv
-        self.table_results.itemChanged.connect(self.on_table_results_changed)
-        self.button_export_csv.clicked.connect(self.save_csv)
-        self.button_export_xlsx.clicked.connect(self.save_xlsx)
-
-    def save_csv(self):
-
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-
-        if not os.path.exists("./dados"):
-            os.mkdir('./dados')
-
-        try:
-            with open(f"dados/csv_{timestamp}.csv", "w", newline="") as arquivo_csv:
-
-                escritor = csv.writer(arquivo_csv)
-                escritor.writerow(self.columns)
-                for tupla in self.results:
-                    escritor.writerow(tupla)
-            QMessageBox.information(self, "Sucesso", "Arquivo exportado")
-            self.close()
-            self.show()
-        except Exception as e:
-            QMessageBox.warning(self, "Erro", str(e))
-
-    def save_xlsx(self):
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-
-        if not os.path.exists("./dados"):
-            os.mkdir('./dados')
-
-        try:
-            df = pd.DataFrame(self.results, columns=self.columns)
-            df.to_excel(f"dados/xlsx_{timestamp}.xlsx", index=False)
-
-            QMessageBox.information(self, "Sucesso", "Arquivo exportado")
-            self.close()
-            self.show()
-
-        except Exception as e:
-            QMessageBox.warning(self, "Erro", str(e))
-
-    def on_table_results_changed(self):
-        if self.table_results.rowCount() > 0:
-            self.button_export_csv.setEnabled(True)
-            self.button_export_xlsx.setEnabled(True)
-        else:
-            self.button_export_csv.setEnabled(False)
-            self.button_export_xlsx.setEnabled(False)
-
 class LoginWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-    
+
         # definindo a janela principal
         self.setWindowTitle("Tela de Login")
-        self.setGeometry(100, 100, 300, 250)  # aumentando a altura para caber os radio buttons
+        self.setGeometry(GEOMETRY_LOGIN)  # aumentando a altura para caber os radio buttons
         
         # criando os widgets da tela de login
         self.edit_username = QLineEdit()
@@ -506,6 +512,12 @@ class LoginWindow(QMainWindow):
   
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+
+    screen_geometry = app.screens()[1].geometry() if len(app.screens()) > 1 else app.screens()[0].geometry()
+    
+    GEOMETRY_LOGIN = QRect(screen_geometry.x() + 100, screen_geometry.y() + 100, 300, 250)
+    GEOMETRY_BASE_WINDOW = QRect(screen_geometry.x() + 100, screen_geometry.y() + 100, 800, 600)
+
     login_window = LoginWindow()
     login_window.show()
     sys.exit(app.exec_())
