@@ -116,6 +116,27 @@ class BaseWindow(QMainWindow):
         menu_layout.addWidget(self.list_select_db)
         self.layout.addLayout(menu_layout)
 
+    def create_command_write_widget(self, command : str) -> QWidget:
+        """
+        command: ['DDL/DML', 'Query (DQL)']
+        """
+        query_layout = QVBoxLayout()
+       
+        label = self.create_label(f"Escreva um comando {command} para executar")
+        query_layout.addWidget(label)
+ 
+        query_layout.addWidget(self.text_query)
+        self.text_query.setFont(QFont("Consolas", 10))  # aplica a fonte ao widget QTextEdit
+        query_layout.addWidget(self.button_run_query)
+ 
+        query_layout.setAlignment(Qt.AlignTop)
+        query_layout.setContentsMargins(0,0,0,0)
+        query_layout.setSpacing(0)
+        query_widget = QWidget()
+        query_widget.setLayout(query_layout)
+ 
+        return query_widget
+    
     def filter_databases(self):
         # Obtendo o texto da barra de pesquisa
         search_text = self.search_bar.text().strip().lower()
@@ -197,7 +218,7 @@ class DDLWindow(BaseWindow):  # DDLWindow herda de BaseWindow
         super().__init__(conn)  # Chama o construtor da BaseWindow
         self.setWindowTitle("DDL Window")
 
-        vertical_layout = self.create_vertical_ddl_layout()
+        vertical_layout = self.create_ddl_vertical_splitter()
 
         self.layout.addWidget(vertical_layout, stretch=1) # expande verticalmente
 
@@ -210,26 +231,13 @@ class DDLWindow(BaseWindow):  # DDLWindow herda de BaseWindow
         self.button_run_query.clicked.connect(self.on_button_run_query_clicked)
         self.configure_export_buttons()
  
-    def create_vertical_ddl_layout(self):
+    def create_ddl_vertical_splitter(self)->QSplitter:
 
         # Cria um QSplitter vertical
         splitter = QSplitter()
         splitter.setOrientation(0)  #0: Vertical
 
-        # CAIXA DE DDL
-        ddl_layout = QVBoxLayout()
-        
-        label = self.create_label("Escreva um comando DDL/DML para executar")
-        ddl_layout.addWidget(label)
-
-        ddl_layout.addWidget(self.text_query)
-        self.text_query.setFont(QFont("Consolas", 10))  # aplica a fonte ao widget QTextEdit
-        ddl_layout.addWidget(self.button_run_query)
-        ddl_layout.setAlignment(Qt.AlignTop)
-        ddl_layout.setContentsMargins(0,0,0,0)
-        ddl_layout.setSpacing(0)
-        ddl_widget = QWidget()
-        ddl_widget.setLayout(ddl_layout)
+        ddl_widget = self.create_command_write_widget('DDL/DML')
         splitter.addWidget(ddl_widget)
 
         # Criando a tabela de resultados
@@ -332,19 +340,7 @@ class DQLWindow(BaseWindow):  # DQLWindow herda de BaseWindow
         splitter.setOrientation(0)  #0: Vertical
 
         # CAIXA DE DDL
-        query_layout = QVBoxLayout()
-        label = self.create_label("Escreva uma query (DQL) para executar")
-        query_layout.addWidget(label)
-
-        query_layout.addWidget(self.text_query)
-        self.text_query.setFont(QFont("Consolas", 10))  # aplica a fonte ao widget QTextEdit
-        query_layout.addWidget(self.button_run_query)
-        query_layout.setAlignment(Qt.AlignTop) # alinha os widgets ao topo
-        query_layout.setContentsMargins(0, 0, 0, 0) # remove as margens
-        query_layout.setSpacing(0) # remove o espaçamento
-        query_widget = QWidget()
-        query_widget.setLayout(query_layout)
-
+        query_widget = self.create_command_write_widget('Query (DQL)')
         splitter.addWidget(query_widget)
 
         # Criando a tabela de resultados
