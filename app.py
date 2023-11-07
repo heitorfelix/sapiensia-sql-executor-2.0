@@ -5,9 +5,9 @@ import os
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QLabel, QLineEdit, QPushButton,
                             QVBoxLayout, QWidget, QMessageBox, QTextEdit, QTableWidget,
                             QListWidget, QAbstractItemView, QAction, QHBoxLayout,
-                            QTableWidgetItem, QRadioButton, QSplitter)
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont, QColor, QIcon
+                            QTableWidgetItem, QRadioButton, QSplitter, QComboBox)
+from PyQt5.QtCore import Qt, QRect
+from PyQt5.QtGui import QFont, QColor, QIcon, QScreen
 
 from pyodbc import ProgrammingError
 from datetime import datetime
@@ -478,17 +478,10 @@ class LoginWindow(QMainWindow):
         combo_text_layout.setAlignment(Qt.AlignTop) # alinha o layout ao topo
         combo_text_layout.setContentsMargins(0, 0, 0, 0) # remove as margens
         combo_text_layout.setSpacing(0) # remove o espaçamento
-        
-        #if not servers:
             
         layout.addLayout(combo_text_layout)
         self.edit_server.setVisible(False)
-        #else:
-            
-
-
         self.combo_server.addItems(servers)
-        #layout.addWidget(self.combo_text_widget)
 
         # adicionando os radio buttons ao layout
         layout.addWidget(self.radio_ddl_dml)
@@ -514,7 +507,6 @@ class LoginWindow(QMainWindow):
     def test_connection(self):
 
         # lendo os dados inseridos na tela de login
-        # self.server   = self.edit_server.text()
         if self.combo_server.isVisible():  # Verifica se a ComboBox está visível
             server = self.combo_server.currentText()
         else:
