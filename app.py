@@ -5,9 +5,9 @@ import os
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QLabel, QLineEdit, QPushButton,
                             QVBoxLayout, QWidget, QMessageBox, QTextEdit, QTableWidget,
                             QListWidget, QAbstractItemView, QAction, QHBoxLayout,
-                            QTableWidgetItem, QRadioButton, QSplitter)
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont, QColor, QIcon
+                            QTableWidgetItem, QRadioButton, QSplitter, QComboBox)
+from PyQt5.QtCore import Qt, QRect
+from PyQt5.QtGui import QFont, QColor, QIcon, QScreen
 
 from pyodbc import ProgrammingError
 from datetime import datetime
@@ -24,7 +24,7 @@ class BaseWindow(QMainWindow):
         super().__init__()
         self.conn = conn
         self.create_menu_bar()
-        self.setGeometry(100, 100, 800, 600)
+        self.setGeometry(GEOMETRY_BASE_WINDOW)
 
         self.create_widgets()
         self.create_database_list_widget()
@@ -32,7 +32,8 @@ class BaseWindow(QMainWindow):
         self.create_query_layout()
 
         self.create_status_bar()        
-        
+        self.create_export_button()
+
     def create_status_bar(self):
         """ Rodapé da página """
         # adicionando widget de status para exibir informações de usuário e servidor
@@ -115,6 +116,27 @@ class BaseWindow(QMainWindow):
         menu_layout.addWidget(self.list_select_db)
         self.layout.addLayout(menu_layout)
 
+    def create_command_write_widget(self, command : str) -> QWidget:
+        """
+        command: ['DDL/DML', 'Query (DQL)']
+        """
+        query_layout = QVBoxLayout()
+       
+        label = self.create_label(f"Escreva um comando {command} para executar")
+        query_layout.addWidget(label)
+ 
+        query_layout.addWidget(self.text_query)
+        self.text_query.setFont(QFont("Consolas", 10))  # aplica a fonte ao widget QTextEdit
+        query_layout.addWidget(self.button_run_query)
+ 
+        query_layout.setAlignment(Qt.AlignTop)
+        query_layout.setContentsMargins(0,0,0,0)
+        query_layout.setSpacing(0)
+        query_widget = QWidget()
+        query_widget.setLayout(query_layout)
+ 
+        return query_widget
+    
     def filter_databases(self):
         # Obtendo o texto da barra de pesquisa
         search_text = self.search_bar.text().strip().lower()
@@ -131,6 +153,64 @@ class BaseWindow(QMainWindow):
         # Adicionando os bancos de dados filtrados à lista de seleção
         self.list_select_db.addItems(filtered_databases)
 
+    def create_export_button(self):
+        # criando o botão
+        self.button_export_csv = QPushButton("Exportar resultados em csv")
+        self.button_export_csv.setEnabled(False) # desabilita o botão inicialmente
+        self.button_export_xlsx = QPushButton("Exportar resultados em xlsx")
+        self.button_export_xlsx.setEnabled(False) # desabilita o botão inicialmente
+
+
+    def configure_export_buttons(self):
+            # configura botão oculto para salvar csv
+        self.table_results.itemChanged.connect(self.on_table_results_changed)
+        self.button_export_csv.clicked.connect(self.save_csv)
+        self.button_export_xlsx.clicked.connect(self.save_xlsx)
+
+    def save_csv(self):
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        if not os.path.exists("./dados"):
+            os.mkdir('./dados')
+
+        try:
+            with open(f"dados/csv_{timestamp}.csv", "w", newline="") as arquivo_csv:
+
+                escritor = csv.writer(arquivo_csv)
+                escritor.writerow(self.columns)
+                for tupla in self.results:
+                    escritor.writerow(tupla)
+            QMessageBox.information(self, "Sucesso", "Arquivo exportado")
+            self.close()
+            self.show()
+        except Exception as e:
+            QMessageBox.warning(self, "Erro", str(e))
+
+    def save_xlsx(self):
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        if not os.path.exists("./dados"):
+            os.mkdir('./dados')
+
+        try:
+            df = pd.DataFrame(self.results, columns=self.columns)
+            df.to_excel(f"dados/xlsx_{timestamp}.xlsx", index=False)
+
+            QMessageBox.information(self, "Sucesso", "Arquivo exportado")
+            self.close()
+            self.show()
+
+        except Exception as e:
+            QMessageBox.warning(self, "Erro", str(e))
+
+    def on_table_results_changed(self):
+        if self.table_results.rowCount() > 0:
+            self.button_export_csv.setEnabled(True)
+            self.button_export_xlsx.setEnabled(True)
+        else:
+            self.button_export_csv.setEnabled(False)
+            self.button_export_xlsx.setEnabled(False)
 
 class DDLWindow(BaseWindow):  # DDLWindow herda de BaseWindow
 
@@ -138,7 +218,7 @@ class DDLWindow(BaseWindow):  # DDLWindow herda de BaseWindow
         super().__init__(conn)  # Chama o construtor da BaseWindow
         self.setWindowTitle("DDL Window")
 
-        vertical_layout = self.create_vertical_ddl_layout()
+        vertical_layout = self.create_ddl_vertical_splitter()
 
         self.layout.addWidget(vertical_layout, stretch=1) # expande verticalmente
 
@@ -149,39 +229,30 @@ class DDLWindow(BaseWindow):  # DDLWindow herda de BaseWindow
 
         # conectando o botão de executar query ao método correspondente
         self.button_run_query.clicked.connect(self.on_button_run_query_clicked)
+        self.configure_export_buttons()
  
-    def create_vertical_ddl_layout(self):
+    def create_ddl_vertical_splitter(self)->QSplitter:
 
         # Cria um QSplitter vertical
         splitter = QSplitter()
         splitter.setOrientation(0)  #0: Vertical
 
-        # CAIXA DE DDL
-        ddl_layout = QVBoxLayout()
-        
-        label = self.create_label("Escreva um comando DDL/DML para executar")
-        ddl_layout.addWidget(label)
-
-        ddl_layout.addWidget(self.text_query)
-        self.text_query.setFont(QFont("Consolas", 10))  # aplica a fonte ao widget QTextEdit
-        ddl_layout.addWidget(self.button_run_query)
-        ddl_layout.setAlignment(Qt.AlignTop)
-        ddl_layout.setContentsMargins(0,0,0,0)
-        ddl_layout.setSpacing(0)
-        ddl_widget = QWidget()
-        ddl_widget.setLayout(ddl_layout)
+        ddl_widget = self.create_command_write_widget('DDL/DML')
         splitter.addWidget(ddl_widget)
 
         # Criando a tabela de resultados
         results_layout = QVBoxLayout()
         self.table_results = QTableWidget()
         results_layout.addWidget(self.table_results)
+        results_layout.addWidget(self.button_export_csv)
+        results_layout.addWidget(self.button_export_xlsx)
         results_layout.setAlignment(Qt.AlignTop) # alinha o layout ao topo
         results_layout.setContentsMargins(0, 0, 0, 0) # remove as margens
         results_layout.setSpacing(0) # remove o espaçamento
         
         self.table_results.setColumnCount(2)
-        self.table_results.setHorizontalHeaderLabels(["Banco de dados", "Resultados"])
+        self.columns = ["Banco de dados", "Resultados"]
+        self.table_results.setHorizontalHeaderLabels(self.columns)
         results_widget = QWidget()
         results_widget.setLayout(results_layout)
         splitter.addWidget(results_widget)
@@ -196,21 +267,21 @@ class DDLWindow(BaseWindow):  # DDLWindow herda de BaseWindow
         selected_databases = [self.list_select_db.item(i).text() for i in range(self.list_select_db.count()) if self.list_select_db.item(i).isSelected()]
 
         # executando a query para cada banco selecionado
-        results = []
+        self.results = []
 
         for db_name in selected_databases:
             try:
                 # executando a query
                 result = self.conn.execute_ddl(db_name, query)
-                results.append(result)
+                self.results.append(result)
             except Exception as e:
                 # armazenando a mensagem de erro
-                results.append((db_name, str(e)))
+                self.results.append((db_name, str(e)))
 
-        results = self._sort_results(results)
+        self._sort_results()
         # preenchendo a tabela com os resultados
-        self.table_results.setRowCount(len(results))
-        for row, result in enumerate(results):
+        self.table_results.setRowCount(len(self.results))
+        for row, result in enumerate(self.results):
             self.table_results.setItem(row, 0, QTableWidgetItem(result[0]))
             item = QTableWidgetItem(str(result[1]))
             if result[1] == 'Executado com sucesso':
@@ -223,16 +294,13 @@ class DDLWindow(BaseWindow):  # DDLWindow herda de BaseWindow
         self.table_results.resizeColumnToContents(0)
         self.table_results.resizeRowsToContents()
         self.table_results.horizontalHeader().setStretchLastSection(True) # estica a ultima coluna para preencher o espaço disponível
-
-        sucessos = [result[1] == 'Executado com sucesso' for result in results]
+        sucessos = [result[1] == 'Executado com sucesso' for result in self.results]
         
-        return results
-        
-    def _sort_results(self, results):
+    def _sort_results(self):
         sucesso = []
         fail = []
 
-        for item in results:
+        for item in self.results:
 
             db_name = item[0]
             result = item[1]
@@ -242,8 +310,7 @@ class DDLWindow(BaseWindow):  # DDLWindow herda de BaseWindow
             else:
                 fail.append((db_name, result))
 
-        results = fail + sucesso
-        return results
+        self.results = fail + sucesso
 
 class DQLWindow(BaseWindow):  # DQLWindow herda de BaseWindow
 
@@ -251,10 +318,9 @@ class DQLWindow(BaseWindow):  # DQLWindow herda de BaseWindow
         super().__init__(conn)  # Chama o construtor da BaseWindow
         self.setWindowTitle("DQL Window")
 
-        
         vertical_layout = self.create_vertical_dql_layout()
 
-        self.layout.addLayout(vertical_layout, stretch=1) # expande verticalmente
+        self.layout.addWidget(vertical_layout, stretch=1) # expande verticalmente
 
         # criando o widget central
         widget = QWidget()
@@ -269,18 +335,13 @@ class DQLWindow(BaseWindow):  # DQLWindow herda de BaseWindow
     def create_vertical_dql_layout(self):
         vertical_layout = QVBoxLayout()
 
-        # CAIXA DE DDL
-        query_layout = QVBoxLayout()
-        label = self.create_label("Escreva uma query (DQL) para executar")
-        query_layout.addWidget(label)
+        # Cria um QSplitter vertical
+        splitter = QSplitter()
+        splitter.setOrientation(0)  #0: Vertical
 
-        query_layout.addWidget(self.text_query)
-        self.text_query.setFont(QFont("Consolas", 10))  # aplica a fonte ao widget QTextEdit
-        query_layout.addWidget(self.button_run_query)
-        query_layout.setAlignment(Qt.AlignTop) # alinha os widgets ao topo
-        query_layout.setContentsMargins(0, 0, 0, 0) # remove as margens
-        query_layout.setSpacing(0) # remove o espaçamento
-        vertical_layout.addLayout(query_layout)
+        # CAIXA DE DDL
+        query_widget = self.create_command_write_widget('Query (DQL)')
+        splitter.addWidget(query_widget)
 
         # Criando a tabela de resultados
         results_layout = QVBoxLayout()
@@ -289,20 +350,21 @@ class DQLWindow(BaseWindow):  # DQLWindow herda de BaseWindow
         results_layout.setAlignment(Qt.AlignTop) # alinha o layout ao topo
         results_layout.setContentsMargins(0, 0, 0, 0) # remove as margens
         results_layout.setSpacing(0) # remove o espaçamento
-        vertical_layout.addLayout(results_layout, stretch=1) # expande verticalmente
-        
 
         # criando o botão
         self.button_export_csv = QPushButton("Exportar resultados em csv")
         self.button_export_csv.setEnabled(False) # desabilita o botão inicialmente
-        vertical_layout.addWidget(self.button_export_csv)
+        results_layout.addWidget(self.button_export_csv)
+
         self.button_export_xlsx = QPushButton("Exportar resultados em xlsx")
         self.button_export_xlsx.setEnabled(False) # desabilita o botão inicialmente
-        vertical_layout.addWidget(self.button_export_xlsx)
-        vertical_layout.setAlignment(Qt.AlignTop) # alinha o layout ao topo
-        vertical_layout.setContentsMargins(0, 0, 0, 0) # remove as margens
-        vertical_layout.setSpacing(0) # remove o espaçamento
-        return vertical_layout
+        results_layout.addWidget(self.button_export_xlsx)
+        #splitter.addWidget(self.button_export_xlsx)
+
+        results_widget = QWidget()
+        results_widget.setLayout(results_layout)
+        splitter.addWidget(results_widget)
+        return splitter
   
     def on_button_run_query_clicked(self):
         # Obtendo a query a ser executada
@@ -368,72 +430,27 @@ class DQLWindow(BaseWindow):  # DQLWindow herda de BaseWindow
         self.columns = columns
         return results
 
-    def configure_export_buttons(self):
-            # configura botão oculto para salvar csv
-        self.table_results.itemChanged.connect(self.on_table_results_changed)
-        self.button_export_csv.clicked.connect(self.save_csv)
-        self.button_export_xlsx.clicked.connect(self.save_xlsx)
-
-    def save_csv(self):
-
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-
-        if not os.path.exists("./dados"):
-            os.mkdir('./dados')
-
-        try:
-            with open(f"dados/csv_{timestamp}.csv", "w", newline="") as arquivo_csv:
-
-                escritor = csv.writer(arquivo_csv)
-                escritor.writerow(self.columns)
-                for tupla in self.results:
-                    escritor.writerow(tupla)
-            QMessageBox.information(self, "Sucesso", "Arquivo exportado")
-            self.close()
-            self.show()
-        except Exception as e:
-            QMessageBox.warning(self, "Erro", str(e))
-
-    def save_xlsx(self):
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-
-        if not os.path.exists("./dados"):
-            os.mkdir('./dados')
-
-        try:
-            df = pd.DataFrame(self.results, columns=self.columns)
-            df.to_excel(f"dados/xlsx_{timestamp}.xlsx", index=False)
-
-            QMessageBox.information(self, "Sucesso", "Arquivo exportado")
-            self.close()
-            self.show()
-
-        except Exception as e:
-            QMessageBox.warning(self, "Erro", str(e))
-
-    def on_table_results_changed(self):
-        if self.table_results.rowCount() > 0:
-            self.button_export_csv.setEnabled(True)
-            self.button_export_xlsx.setEnabled(True)
-        else:
-            self.button_export_csv.setEnabled(False)
-            self.button_export_xlsx.setEnabled(False)
-
 class LoginWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-    
+
         # definindo a janela principal
         self.setWindowTitle("Tela de Login")
-        self.setGeometry(100, 100, 300, 250)  # aumentando a altura para caber os radio buttons
+        self.setGeometry(GEOMETRY_LOGIN)  # aumentando a altura para caber os radio buttons
         
         # criando os widgets da tela de login
         self.edit_username = QLineEdit()
         self.edit_password = QLineEdit()
         self.edit_password.setEchoMode(QLineEdit.Password)
         self.edit_server = QLineEdit()
+        self.combo_server = QComboBox()
         self.button_login = QPushButton("Login")
+        self.toggle_button = QPushButton()
         
+        self.toggle_button.setIcon(QIcon("./icons/refresh.png"))
+        self.toggle_button.clicked.connect(self.toggle_text_combo)
+
+
         # criando os radio buttons
         self.radio_ddl_dml = QRadioButton("DDL/DML")
         self.radio_dql = QRadioButton("Query (DQL)")
@@ -441,8 +458,7 @@ class LoginWindow(QMainWindow):
         
         # preenchendo os campos com os dados salvos (se existirem)
         try:
-            server, username = load_login_data()
-            self.edit_server.setText(server)
+            servers, username = load_login_data()
             self.edit_username.setText(username)
         except:
             pass
@@ -454,8 +470,26 @@ class LoginWindow(QMainWindow):
         layout.addWidget(QLabel("Password:"))
         layout.addWidget(self.edit_password)
         layout.addWidget(QLabel("Server:"))
-        layout.addWidget(self.edit_server)
+
+        combo_text_layout = QHBoxLayout()
+        combo_text_layout.addWidget(self.edit_server)
+        combo_text_layout.addWidget(self.combo_server)
+        combo_text_layout.addWidget(self.toggle_button)
+        combo_text_layout.setAlignment(Qt.AlignTop) # alinha o layout ao topo
+        combo_text_layout.setContentsMargins(0, 0, 0, 0) # remove as margens
+        combo_text_layout.setSpacing(0) # remove o espaçamento
         
+        #if not servers:
+            
+        layout.addLayout(combo_text_layout)
+        self.edit_server.setVisible(False)
+        #else:
+            
+
+
+        self.combo_server.addItems(servers)
+        #layout.addWidget(self.combo_text_widget)
+
         # adicionando os radio buttons ao layout
         layout.addWidget(self.radio_ddl_dml)
         layout.addWidget(self.radio_dql)
@@ -469,34 +503,60 @@ class LoginWindow(QMainWindow):
         # conectando o botão de login à função de teste de conexão
         self.button_login.clicked.connect(self.test_connection)
         
-
+    def toggle_text_combo(self):
+        if self.edit_server.isVisible():
+            self.edit_server.setVisible(False)
+            self.combo_server.setVisible(True)
+        else:
+            self.edit_server.setVisible(True)
+            self.combo_server.setVisible(False)
 
     def test_connection(self):
+
         # lendo os dados inseridos na tela de login
-        server = self.edit_server.text()
+        # self.server   = self.edit_server.text()
+        if self.combo_server.isVisible():  # Verifica se a ComboBox está visível
+            server = self.combo_server.currentText()
+        else:
+            server = self.edit_server.text()
         username = self.edit_username.text()
         password = self.edit_password.text()
 
         # testando a conexão com o banco de dados
         conn = Conexao(server, user=username, password=password)
-        if conn.test_azure_connection():
-            # salvando os dados de login para a próxima vez
-            save_login_data(server, username)
 
-            # abrindo a janela correspondente ao tipo de consulta selecionado
-            if self.radio_ddl_dml.isChecked():
-                self.query_window = DDLWindow(conn)
-            elif self.radio_dql.isChecked():
-                self.query_window = DQLWindow(conn)
-                
-            self.query_window.show()
-            self.close()
-        else:
-            # exibindo mensagem de erro
-            QMessageBox.warning(self, "Erro de Conexão", "Não foi possível conectar ao servidor.")
+
+        try:
+            conn_result = conn.test_azure_connection()
+            if conn_result:
+                # salvando os dados de login para a próxima vez
+                save_login_data(server, username)
+
+                # abrindo a janela correspondente ao tipo de consulta selecionado
+                if self.radio_ddl_dml.isChecked():
+                    self.query_window = DDLWindow(conn)
+                elif self.radio_dql.isChecked():
+                    self.query_window = DQLWindow(conn)
+                    
+                self.query_window.show()
+                self.close()
+            else:
+                # exibindo mensagem de erro
+                QMessageBox.warning(self, "Erro de Conexão", "Não foi possível conectar ao servidor.")
+        
+        except NameError as e:
+            QMessageBox.warning(self, "Erro de Conexão" ,str(e))
+
+        
   
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+
+    screen_geometry = app.screens()[1].geometry() if len(app.screens()) > 1 else app.screens()[0].geometry()
+    
+    GEOMETRY_LOGIN = QRect(screen_geometry.x() + 100, screen_geometry.y() + 100, 300, 250)
+    GEOMETRY_BASE_WINDOW = QRect(screen_geometry.x() + 100, screen_geometry.y() + 100, 800, 600)
+
     login_window = LoginWindow()
     login_window.show()
     sys.exit(app.exec_())
