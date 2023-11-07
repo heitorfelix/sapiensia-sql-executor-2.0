@@ -5,9 +5,9 @@ import os
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QLabel, QLineEdit, QPushButton,
                             QVBoxLayout, QWidget, QMessageBox, QTextEdit, QTableWidget,
                             QListWidget, QAbstractItemView, QAction, QHBoxLayout,
-                            QTableWidgetItem, QRadioButton, QSplitter, QComboBox)
-from PyQt5.QtCore import Qt, QRect
-from PyQt5.QtGui import QFont, QColor, QIcon, QScreen
+                            QTableWidgetItem, QRadioButton, QSplitter)
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QFont, QColor, QIcon
 
 from pyodbc import ProgrammingError
 from datetime import datetime
