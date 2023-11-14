@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QLabel, QLineEdit, QPush
                             QListWidget, QAbstractItemView, QAction, QHBoxLayout,
                             QTableWidgetItem, QRadioButton, QSplitter, QComboBox)
 from PyQt5.QtCore import Qt, QRect
-from PyQt5.QtGui import QFont, QColor, QIcon, QScreen
+from PyQt5.QtGui import QFont, QColor, QIcon
 
 from pyodbc import ProgrammingError
 from datetime import datetime
@@ -194,6 +194,8 @@ class BaseWindow(QMainWindow):
             os.mkdir('./dados')
 
         try:
+            print(self.columns)
+            print(self.results)
             df = pd.DataFrame(self.results, columns=self.columns)
             df.to_excel(f"dados/xlsx_{timestamp}.xlsx", index=False)
 
@@ -400,14 +402,18 @@ class DQLWindow(BaseWindow):  # DQLWindow herda de BaseWindow
                 QMessageBox.warning(self, f"Erro em {db_name}", str(e))
 
             result = self.conn.execute_query(db_name, query)
+            print(result)
+            if not result:
+                result = [tuple([db_name] + ['']*(len(db_columns)-1))]
+
             results += result
-            
+
         if db_columns:
             for col in db_columns:
                 if col not in columns:
                     columns.append(col)
         
-
+        
         if not results:
             QMessageBox.critical(self, f"Erro", "A tabela não existe em nenhum database ou há algum problema nesta consulta")
 
