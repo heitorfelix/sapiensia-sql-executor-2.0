@@ -1,11 +1,12 @@
 import sys
 import csv
 import os
+import math 
 
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QLabel, QLineEdit, QPushButton,
                             QVBoxLayout, QWidget, QMessageBox, QTextEdit, QTableWidget,
                             QListWidget, QAbstractItemView, QAction, QHBoxLayout,
-                            QTableWidgetItem, QRadioButton, QSplitter, QComboBox)
+                            QTableWidgetItem, QRadioButton, QSplitter, QComboBox, QProgressBar)
 from PyQt5.QtCore import Qt, QRect
 from PyQt5.QtGui import QFont, QColor, QIcon
 
@@ -242,12 +243,17 @@ class DDLWindow(BaseWindow):  # DDLWindow herda de BaseWindow
         ddl_widget = self.create_command_write_widget('DDL/DML')
         splitter.addWidget(ddl_widget)
 
+        self.progress_bar = QProgressBar(self)
+        self.progress_bar.setEnabled(False)
+
         # Criando a tabela de resultados
         results_layout = QVBoxLayout()
         self.table_results = QTableWidget()
         results_layout.addWidget(self.table_results)
+        results_layout.addWidget(self.progress_bar)
         results_layout.addWidget(self.button_export_csv)
         results_layout.addWidget(self.button_export_xlsx)
+
         results_layout.setAlignment(Qt.AlignTop) # alinha o layout ao topo
         results_layout.setContentsMargins(0, 0, 0, 0) # remove as margens
         results_layout.setSpacing(0) # remove o espaçamento
@@ -271,7 +277,11 @@ class DDLWindow(BaseWindow):  # DDLWindow herda de BaseWindow
         # executando a query para cada banco selecionado
         self.results = []
 
-        for db_name in selected_databases:
+        self.progress_bar.setEnabled(True)
+
+        number_of_dbs = len(selected_databases)
+        for i ,db_name in enumerate(selected_databases):
+            step = math.ceil((i+1)/number_of_dbs * 100)
             try:
                 # executando a query
                 result = self.conn.execute_ddl(db_name, query)
@@ -279,7 +289,7 @@ class DDLWindow(BaseWindow):  # DDLWindow herda de BaseWindow
             except Exception as e:
                 # armazenando a mensagem de erro
                 self.results.append((db_name, str(e)))
-
+            self.progress_bar.setValue(step)
         self._sort_results()
         # preenchendo a tabela com os resultados
         self.table_results.setRowCount(len(self.results))
@@ -335,7 +345,6 @@ class DQLWindow(BaseWindow):  # DQLWindow herda de BaseWindow
 
 
     def create_vertical_dql_layout(self):
-        vertical_layout = QVBoxLayout()
 
         # Cria um QSplitter vertical
         splitter = QSplitter()
@@ -344,11 +353,14 @@ class DQLWindow(BaseWindow):  # DQLWindow herda de BaseWindow
         # CAIXA DE DDL
         query_widget = self.create_command_write_widget('Query (DQL)')
         splitter.addWidget(query_widget)
+        self.progress_bar = QProgressBar(self)
+        self.progress_bar.setEnabled(False)
 
         # Criando a tabela de resultados
         results_layout = QVBoxLayout()
         self.table_results = QTableWidget()
         results_layout.addWidget(self.table_results)
+        results_layout.addWidget(self.progress_bar)
         results_layout.setAlignment(Qt.AlignTop) # alinha o layout ao topo
         results_layout.setContentsMargins(0, 0, 0, 0) # remove as margens
         results_layout.setSpacing(0) # remove o espaçamento
@@ -382,8 +394,12 @@ class DQLWindow(BaseWindow):  # DQLWindow herda de BaseWindow
         results = []
         columns = ['DatabaseName']
         db_columns = []
+        
+        number_of_dbs = len(selected_databases)
+            
 
-        for db_name in selected_databases:
+        for i, db_name in enumerate(selected_databases):
+            step = math.ceil((i+1)/number_of_dbs * 100)
             try:
                 find_columns_test = self.conn.execute_query(db_name, query)
             except Exception as e:
@@ -407,7 +423,8 @@ class DQLWindow(BaseWindow):  # DQLWindow herda de BaseWindow
                 result = [tuple([db_name] + ['']*(len(db_columns)-1))]
 
             results += result
-
+            self.progress_bar.setValue(step)
+            
         if db_columns:
             for col in db_columns:
                 if col not in columns:
@@ -416,7 +433,7 @@ class DQLWindow(BaseWindow):  # DQLWindow herda de BaseWindow
         
         if not results:
             QMessageBox.critical(self, f"Erro", "A tabela não existe em nenhum database ou há algum problema nesta consulta")
-
+        
         # Preenchendo a tabela com os resultados
         self.table_results.setRowCount(len(results))
         self.table_results.setColumnCount(len(columns))
@@ -438,69 +455,73 @@ class DQLWindow(BaseWindow):  # DQLWindow herda de BaseWindow
 
 class LoginWindow(QMainWindow):
     def __init__(self):
-        super().__init__()
-
-        # definindo a janela principal
-        self.setWindowTitle("Tela de Login")
-        self.setGeometry(GEOMETRY_LOGIN)  # aumentando a altura para caber os radio buttons
-        
-        # criando os widgets da tela de login
-        self.edit_username = QLineEdit()
-        self.edit_password = QLineEdit()
-        self.edit_password.setEchoMode(QLineEdit.Password)
-        self.edit_server = QLineEdit()
-        self.combo_server = QComboBox()
-        self.button_login = QPushButton("Login")
-        self.toggle_button = QPushButton()
-        
-        self.toggle_button.setIcon(QIcon("./icons/refresh.png"))
-        self.toggle_button.clicked.connect(self.toggle_text_combo)
-
-
-        # criando os radio buttons
-        self.radio_ddl_dml = QRadioButton("DDL/DML")
-        self.radio_dql = QRadioButton("Query (DQL)")
-        self.radio_ddl_dml.setChecked(True)  # deixando o DDL/DML selecionado por padrão
-        
-        # preenchendo os campos com os dados salvos (se existirem)
         try:
-            servers, username = load_login_data()
-            self.edit_username.setText(username)
-        except:
-            pass
+            super().__init__()
 
-        # criando o layout da tela de login
-        layout = QVBoxLayout()
-        layout.addWidget(QLabel("Username:"))
-        layout.addWidget(self.edit_username)
-        layout.addWidget(QLabel("Password:"))
-        layout.addWidget(self.edit_password)
-        layout.addWidget(QLabel("Server:"))
-
-        combo_text_layout = QHBoxLayout()
-        combo_text_layout.addWidget(self.edit_server)
-        combo_text_layout.addWidget(self.combo_server)
-        combo_text_layout.addWidget(self.toggle_button)
-        combo_text_layout.setAlignment(Qt.AlignTop) # alinha o layout ao topo
-        combo_text_layout.setContentsMargins(0, 0, 0, 0) # remove as margens
-        combo_text_layout.setSpacing(0) # remove o espaçamento
+            # definindo a janela principal
+            self.setWindowTitle("Tela de Login")
+            self.setGeometry(GEOMETRY_LOGIN)  # aumentando a altura para caber os radio buttons
             
-        layout.addLayout(combo_text_layout)
-        self.edit_server.setVisible(False)
-        self.combo_server.addItems(servers)
+            # criando os widgets da tela de login
+            self.edit_username = QLineEdit()
+            self.edit_password = QLineEdit()
+            self.edit_password.setEchoMode(QLineEdit.Password)
+            self.edit_server = QLineEdit()
+            self.combo_server = QComboBox()
+            self.button_login = QPushButton("Login")
+            self.toggle_button = QPushButton()
+            
+            self.toggle_button.setIcon(QIcon("./icons/refresh.png"))
+            self.toggle_button.clicked.connect(self.toggle_text_combo)
 
-        # adicionando os radio buttons ao layout
-        layout.addWidget(self.radio_ddl_dml)
-        layout.addWidget(self.radio_dql)
-        layout.addWidget(self.button_login)
 
-        # criando o widget central
-        widget = QWidget()
-        widget.setLayout(layout)
-        self.setCentralWidget(widget)
+            # criando os radio buttons
+            self.radio_ddl_dml = QRadioButton("DDL/DML")
+            self.radio_dql = QRadioButton("Query (DQL)")
+            self.radio_ddl_dml.setChecked(True)  # deixando o DDL/DML selecionado por padrão
+            
+            # preenchendo os campos com os dados salvos (se existirem)
+            try:
+                servers, username = load_login_data()
+                self.edit_username.setText(username)
+            except:
+                pass
 
-        # conectando o botão de login à função de teste de conexão
-        self.button_login.clicked.connect(self.test_connection)
+            # criando o layout da tela de login
+            layout = QVBoxLayout()
+            layout.addWidget(QLabel("Username:"))
+            layout.addWidget(self.edit_username)
+            layout.addWidget(QLabel("Password:"))
+            layout.addWidget(self.edit_password)
+            layout.addWidget(QLabel("Server:"))
+
+            combo_text_layout = QHBoxLayout()
+            combo_text_layout.addWidget(self.edit_server)
+            combo_text_layout.addWidget(self.combo_server)
+            combo_text_layout.addWidget(self.toggle_button)
+            combo_text_layout.setAlignment(Qt.AlignTop) # alinha o layout ao topo
+            combo_text_layout.setContentsMargins(0, 0, 0, 0) # remove as margens
+            combo_text_layout.setSpacing(0) # remove o espaçamento
+                
+            layout.addLayout(combo_text_layout)
+            self.edit_server.setVisible(False)
+            self.combo_server.addItems(servers)
+
+            # adicionando os radio buttons ao layout
+            layout.addWidget(self.radio_ddl_dml)
+            layout.addWidget(self.radio_dql)
+            layout.addWidget(self.button_login)
+
+            # criando o widget central
+            widget = QWidget()
+            widget.setLayout(layout)
+            self.setCentralWidget(widget)
+
+            # conectando o botão de login à função de teste de conexão
+            self.button_login.clicked.connect(self.test_connection)
+        
+        except Exception as e:
+            QMessageBox.warning(self, str(e))
         
     def toggle_text_combo(self):
         if self.edit_server.isVisible():
