@@ -1,5 +1,4 @@
 import pyodbc
-import time
 from pyodbc import ProgrammingError
 
 
