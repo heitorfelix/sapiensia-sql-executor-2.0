@@ -1,4 +1,4 @@
-pyodbc==4.0.34
-PyQt5==5.15.9
-openpyxl==3.1.2
-pandas==1.5.3
+pyodbc
+PyQt5
+openpyxl
+pandas
