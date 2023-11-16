@@ -2,11 +2,19 @@
 import os
 import json
 from PyQt5.QtCore import QRect
-from PyQt5.QtWidgets import (QLineEdit, QPushButton,
+from PyQt5.QtWidgets import (QApplication, QLineEdit, QPushButton,
                             QListWidget, QAbstractItemView, 
                             QCheckBox, QFormLayout, QFileDialog, QDialog)
 
 CONFIG_FILE = 'config.json'
+CURRENT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+
+
+app = QApplication([])
+screen_geometry = app.screens()[1].geometry() if len(app.screens()) > 1 else app.screens()[0].geometry()
+GEOMETRY_LOGIN = QRect(screen_geometry.x() + 100, screen_geometry.y() + 100, 300, 250)
+GEOMETRY_BASE_WINDOW = QRect(screen_geometry.x() + 100, screen_geometry.y() + 100, 800, 600)
+
 
 
 class ConfigDialog(QDialog):
