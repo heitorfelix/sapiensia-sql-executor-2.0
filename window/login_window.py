@@ -1,7 +1,7 @@
 import os
 from PyQt5.QtWidgets import ( QMainWindow, QLabel, QLineEdit, QPushButton,
                             QVBoxLayout, QWidget, QMessageBox,
-                            QAction, QHBoxLayout,
+                             QHBoxLayout,
                              QRadioButton, QComboBox)
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import  QIcon

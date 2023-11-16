@@ -1,23 +1,14 @@
-import sys
-import csv
 import os
 import math 
-import json
 
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QLabel, QLineEdit, QPushButton,
-                            QVBoxLayout, QWidget, QMessageBox, QTextEdit, QTableWidget,
-                            QListWidget, QAbstractItemView, QAction, QHBoxLayout,
-                            QTableWidgetItem, QRadioButton, QSplitter, QComboBox, QProgressBar,
-                            QCheckBox, QFormLayout, QFileDialog, QDialog)
-from PyQt5.QtCore import Qt, QRect
-from PyQt5.QtGui import QFont, QColor, QIcon
+from PyQt5.QtWidgets import (QVBoxLayout, QWidget, QMessageBox, QTableWidget,
+                            QTableWidgetItem,  QSplitter, QProgressBar,)
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import  QIcon
 
 from pyodbc import ProgrammingError
-from datetime import datetime
-import pandas as pd
-from utils.database import Conexao
-from utils.utils import save_login_data, load_login_data, create_login_folder
-from utils.config import ConfigDialog, CONFIG_FILE, CURRENT_DIR
+
+from utils.config import CURRENT_DIR
 from window.base_window import BaseWindow
 
 
