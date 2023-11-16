@@ -2,11 +2,13 @@ import sys
 import csv
 import os
 import math 
+import json
 
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QLabel, QLineEdit, QPushButton,
                             QVBoxLayout, QWidget, QMessageBox, QTextEdit, QTableWidget,
                             QListWidget, QAbstractItemView, QAction, QHBoxLayout,
-                            QTableWidgetItem, QRadioButton, QSplitter, QComboBox, QProgressBar)
+                            QTableWidgetItem, QRadioButton, QSplitter, QComboBox, QProgressBar,
+                            QCheckBox, QFormLayout, QFileDialog, QDialog)
 from PyQt5.QtCore import Qt, QRect
 from PyQt5.QtGui import QFont, QColor, QIcon
 
@@ -15,15 +17,15 @@ from datetime import datetime
 import pandas as pd
 from utils.database import Conexao
 from utils.utils import save_login_data, load_login_data, create_login_folder
-
+from utils.config import ConfigDialog, CONFIG_FILE
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-
 
 class BaseWindow(QMainWindow):
     def __init__(self, conn):
         super().__init__()
         self.conn = conn
+        
         self.create_menu_bar()
         self.setGeometry(GEOMETRY_BASE_WINDOW)
 
@@ -34,6 +36,20 @@ class BaseWindow(QMainWindow):
 
         self.create_status_bar()        
         self.create_export_button()
+
+        self.config = self.get_config()
+        if self.config:
+            if self.config['always_use_blacklist_filter']:
+                self.filter_databases_blacklist()
+       
+    def get_config(self):
+        if os.path.exists(CONFIG_FILE):
+            with open(CONFIG_FILE, 'r') as f:
+                config = json.load(f)
+
+            return config.get(self.conn.server, None)
+
+        return None
 
     def create_status_bar(self):
         """ Rodapé da página """
@@ -48,7 +64,9 @@ class BaseWindow(QMainWindow):
         self.statusBar().update()
 
     def open_options(self):
-        pass
+        config_dialog = ConfigDialog(self.conn.server, self.conn.list_databases(), self)
+        print(self.conn.list_databases())
+        config_dialog.exec_()
 
 
     def create_menu_bar(self):
@@ -57,9 +75,17 @@ class BaseWindow(QMainWindow):
         page_menu = menubar.addMenu('Pages')
         options_menu =  menubar.addMenu('Options')
 
-        configuration_action = QAction(QIcon(os.path.join(CURRENT_DIR, 'icons', 'logout_icon.png')), 'Configuration', self)
-        configuration_action.triggered.connect(self.logout)
+        configuration_action = QAction(QIcon(os.path.join(CURRENT_DIR, 'icons', 'settings.png')), 'Configuration', self)
+        configuration_action.triggered.connect(self.open_options)
         options_menu.addAction(configuration_action)
+
+        use_blacklist_action = QAction('Use Blacklist', self)
+        use_blacklist_action.triggered.connect(self.filter_databases_blacklist)
+        options_menu.addAction(use_blacklist_action)
+
+        not_use_blacklist_action = QAction('Not Use Blacklist', self)
+        not_use_blacklist_action.triggered.connect(self._refresh_database_list)
+        options_menu.addAction(not_use_blacklist_action)
 
         logout_action = QAction(QIcon(os.path.join(CURRENT_DIR, 'icons', 'logout_icon.png')), 'Logout', self)
         logout_action.triggered.connect(self.logout)
@@ -168,6 +194,23 @@ class BaseWindow(QMainWindow):
 
         # Adicionando os bancos de dados filtrados à lista de seleção
         self.list_select_db.addItems(filtered_databases)
+
+
+    def filter_databases_blacklist(self):
+        
+        # update config
+        self.config = self.get_config()
+
+        if not self.config:
+            QMessageBox.warning(self, 'No config', 'Init the config')
+
+        else:
+            
+            blacklist = self.config['black_list']
+            all_databases = self.conn.list_databases()
+            filtered_databases = [db for db in all_databases if db not in blacklist]
+            self.list_select_db.clear()
+            self.list_select_db.addItems(filtered_databases)
 
     def create_export_button(self):
         # criando o botão
