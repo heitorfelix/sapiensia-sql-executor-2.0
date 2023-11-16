@@ -38,13 +38,28 @@ class BaseWindow(QMainWindow):
     def create_status_bar(self):
         """ Rodapé da página """
         # adicionando widget de status para exibir informações de usuário e servidor
-        status_label = QLabel(f"Usuário: {self.conn.user} - Servidor: {self.conn.server}")
-        self.statusBar().addWidget(status_label)
+        self.status_label = QLabel(f"Usuário: {self.conn.user} - Servidor: {self.conn.server}")
+        self.statusBar().addWidget(self.status_label)
+
+    def update_status_bar(self, db_name):
+        """Atualiza o texto na statusBar com o nome do banco de dados."""
+        new_text = f"Usuário: {self.conn.user} - Servidor: {self.conn.server} - Database: {db_name}"
+        self.status_label.setText(new_text)
+        self.statusBar().update()
+
+    def open_options(self):
+        pass
+
 
     def create_menu_bar(self):
         menubar = self.menuBar()
         user_menu = menubar.addMenu('User')
         page_menu = menubar.addMenu('Pages')
+        options_menu =  menubar.addMenu('Options')
+
+        configuration_action = QAction(QIcon(os.path.join(CURRENT_DIR, 'icons', 'logout_icon.png')), 'Configuration', self)
+        configuration_action.triggered.connect(self.logout)
+        options_menu.addAction(configuration_action)
 
         logout_action = QAction(QIcon(os.path.join(CURRENT_DIR, 'icons', 'logout_icon.png')), 'Logout', self)
         logout_action.triggered.connect(self.logout)
@@ -282,6 +297,8 @@ class DDLWindow(BaseWindow):  # DDLWindow herda de BaseWindow
         number_of_dbs = len(selected_databases)
         for i ,db_name in enumerate(selected_databases):
             step = math.ceil((i+1)/number_of_dbs * 100)
+            self.update_status_bar(db_name)
+            
             try:
                 # executando a query
                 result = self.conn.execute_ddl(db_name, query)
@@ -394,12 +411,13 @@ class DQLWindow(BaseWindow):  # DQLWindow herda de BaseWindow
 
         for i, db_name in enumerate(selected_databases):
             step = math.ceil((i+1)/number_of_dbs * 100)
+            self.update_status_bar(db_name)
             try:
                 find_columns_test = self.conn.execute_query(db_name, query)
             except Exception as e:
                 # Erro de conexão com o banco de dados
                 QMessageBox.warning(self, f"Erro de conexão em {db_name}", f"Houve um problema de conexão com o banco de dados {db_name}. Verifique se as credenciais de acesso são válidas e se o banco de dados está em funcionamento.")
-                return None
+                continue
             
             if "Error: " in find_columns_test:  # Armazenando a mensagem de erro
                 QMessageBox.warning(self, f"Erro em {db_name}", find_columns_test)
@@ -414,7 +432,6 @@ class DQLWindow(BaseWindow):  # DQLWindow herda de BaseWindow
             result = self.conn.execute_query(db_name, query)
             #print(result)
             if not result:
-                #result = [tuple([db_name] + ['']*(len(db_columns)-1))]
                 pass
             
             else:
@@ -563,9 +580,7 @@ class LoginWindow(QMainWindow):
                 QMessageBox.warning(self, "Erro de Conexão", "Não foi possível conectar ao servidor.")
         
         except NameError as e:
-            QMessageBox.warning(self, "Erro de Conexão" ,str(e))
-
-        
+            QMessageBox.warning(self, "Erro de Conexão" ,str(e))      
   
 if __name__ == '__main__':
     app = QApplication(sys.argv)
