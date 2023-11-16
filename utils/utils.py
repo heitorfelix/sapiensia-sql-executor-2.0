@@ -32,6 +32,6 @@ def save_login_data(server, username) -> None:
         pickle.dump(login_data, f)
     
 
-def __init__():
+def create_login_folder():
     if not os.path.exists("./login"):
         os.mkdir('./login')

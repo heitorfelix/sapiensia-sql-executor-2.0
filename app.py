@@ -14,7 +14,7 @@ from pyodbc import ProgrammingError
 from datetime import datetime
 import pandas as pd
 from utils.database import Conexao
-from utils.utils import save_login_data, load_login_data
+from utils.utils import save_login_data, load_login_data, create_login_folder
 
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -366,15 +366,9 @@ class DQLWindow(BaseWindow):  # DQLWindow herda de BaseWindow
         results_layout.setSpacing(0) # remove o espaçamento
 
         # criando o botão
-        self.button_export_csv = QPushButton("Exportar resultados em csv")
-        self.button_export_csv.setEnabled(False) # desabilita o botão inicialmente
         results_layout.addWidget(self.button_export_csv)
-
-        self.button_export_xlsx = QPushButton("Exportar resultados em xlsx")
-        self.button_export_xlsx.setEnabled(False) # desabilita o botão inicialmente
         results_layout.addWidget(self.button_export_xlsx)
-        #splitter.addWidget(self.button_export_xlsx)
-
+        
         results_widget = QWidget()
         results_widget.setLayout(results_layout)
         splitter.addWidget(results_widget)
@@ -418,13 +412,16 @@ class DQLWindow(BaseWindow):  # DQLWindow herda de BaseWindow
                 QMessageBox.warning(self, f"Erro em {db_name}", str(e))
 
             result = self.conn.execute_query(db_name, query)
-            print(result)
+            #print(result)
             if not result:
-                result = [tuple([db_name] + ['']*(len(db_columns)-1))]
-
-            results += result
-            self.progress_bar.setValue(step)
+                #result = [tuple([db_name] + ['']*(len(db_columns)-1))]
+                pass
             
+            else:
+                results += result
+            self.progress_bar.setValue(step)
+
+        self.progress_bar.setValue(100) # força finalizar a barra
         if db_columns:
             for col in db_columns:
                 if col not in columns:
@@ -457,6 +454,8 @@ class LoginWindow(QMainWindow):
     def __init__(self):
         try:
             super().__init__()
+
+            create_login_folder()
 
             # definindo a janela principal
             self.setWindowTitle("Tela de Login")
