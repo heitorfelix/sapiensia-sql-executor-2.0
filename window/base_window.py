@@ -1,6 +1,7 @@
 import csv
 import os
 import json
+from json.decoder import JSONDecodeError
 
 from PyQt5.QtWidgets import ( QMainWindow, QLabel, QLineEdit, QPushButton,
                             QVBoxLayout, QWidget, QMessageBox, QTextEdit, 
@@ -11,7 +12,7 @@ from PyQt5.QtGui import QFont, QIcon
 
 from datetime import datetime
 import pandas as pd
-from utils.config import ConfigDialog, CONFIG_FILE, CURRENT_DIR, GEOMETRY_BASE_WINDOW
+from utils.config import ConfigDialog, CONFIG_FILE, CURRENT_DIR, GEOMETRY_BASE_WINDOW, DEFAULT_DATA_DIR
 
 
 
@@ -38,10 +39,13 @@ class BaseWindow(QMainWindow):
        
     def get_config(self):
         if os.path.exists(CONFIG_FILE):
-            with open(CONFIG_FILE, 'r') as f:
-                config = json.load(f)
+            try:
+                with open(CONFIG_FILE, 'r') as f:
+                    config = json.load(f)
 
-            return config.get(self.conn.server, None)
+                return config.get(self.conn.server, None)
+            except JSONDecodeError as e:
+                return None
 
         return None
 
@@ -61,7 +65,6 @@ class BaseWindow(QMainWindow):
         config_dialog = ConfigDialog(self.conn.server, self.conn.list_databases(), self)
         print(self.conn.list_databases())
         config_dialog.exec_()
-
 
     def create_menu_bar(self):
         menubar = self.menuBar()
@@ -98,6 +101,7 @@ class BaseWindow(QMainWindow):
         page_menu.addAction(query_action)
 
     def logout(self):
+        from window.login_window import LoginWindow
         # fechando a janela atual
         self.close()
 
@@ -226,18 +230,23 @@ class BaseWindow(QMainWindow):
     def save_csv(self):
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        config_path = self.config.get('path', None)
 
-        if not os.path.exists("./dados"):
-            os.mkdir('./dados')
+        if not config_path:
+            if not os.path.exists(DEFAULT_DATA_DIR):
+                os.mkdir(DEFAULT_DATA_DIR)
+                path = DEFAULT_DATA_DIR
+        else:
+            path = config_path
 
         try:
-            with open(f"dados/csv_{timestamp}.csv", "w", newline="") as arquivo_csv:
+            with open(f"{path}/csv_{timestamp}.csv", "w", newline="") as arquivo_csv:
 
                 escritor = csv.writer(arquivo_csv)
                 escritor.writerow(self.columns)
                 for tupla in self.results:
                     escritor.writerow(tupla)
-            QMessageBox.information(self, "Sucesso", "Arquivo exportado")
+            QMessageBox.information(self, "Sucesso", f"Arquivo exportado em {path}")
             self.close()
             self.show()
         except Exception as e:
@@ -245,17 +254,22 @@ class BaseWindow(QMainWindow):
 
     def save_xlsx(self):
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        config_path = self.config.get('path', None)
 
-        if not os.path.exists("./dados"):
-            os.mkdir('./dados')
+        if not config_path:
+
+            if not os.path.exists(DEFAULT_DATA_DIR):
+                os.mkdir(DEFAULT_DATA_DIR)
+                path = DEFAULT_DATA_DIR
+
+        else:
+            path = config_path
 
         try:
-            print(self.columns)
-            print(self.results)
             df = pd.DataFrame(self.results, columns=self.columns)
-            df.to_excel(f"dados/xlsx_{timestamp}.xlsx", index=False)
+            df.to_excel(f"{path}/xlsx_{timestamp}.xlsx", index=False)
 
-            QMessageBox.information(self, "Sucesso", "Arquivo exportado")
+            QMessageBox.information(self, "Sucesso", f"Arquivo exportado em {path}")
             self.close()
             self.show()
 
