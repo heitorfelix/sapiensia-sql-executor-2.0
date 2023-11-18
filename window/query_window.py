@@ -7,7 +7,6 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import  QIcon
 
 from pyodbc import ProgrammingError
-
 from utils.config import CURRENT_DIR
 from window.base_window import BaseWindow
 
@@ -18,7 +17,7 @@ class DQLWindow(BaseWindow):  # DQLWindow herda de BaseWindow
         super().__init__(conn)  # Chama o construtor da BaseWindow
         self.setWindowTitle("DQL Window")
         self.setWindowIcon(QIcon(os.path.join(CURRENT_DIR, 'icons', 'sql.png')))
-        vertical_layout = self.create_vertical_dql_layout()
+        vertical_layout = self.create_vertical_splitter('dql')
 
         self.layout.addWidget(vertical_layout, stretch=1) # expande verticalmente
 
@@ -31,37 +30,6 @@ class DQLWindow(BaseWindow):  # DQLWindow herda de BaseWindow
         self.button_run_query.clicked.connect(self.on_button_run_query_clicked)
         self.configure_export_buttons()
 
-
-    def create_vertical_dql_layout(self):
-
-        # Cria um QSplitter vertical
-        splitter = QSplitter()
-        splitter.setOrientation(0)  #0: Vertical
-
-        # CAIXA DE DDL
-        query_widget = self.create_command_write_widget('Query (DQL)')
-        splitter.addWidget(query_widget)
-        self.progress_bar = QProgressBar(self)
-        self.progress_bar.setEnabled(False)
-
-        # Criando a tabela de resultados
-        results_layout = QVBoxLayout()
-        self.table_results = QTableWidget()
-        results_layout.addWidget(self.table_results)
-        results_layout.addWidget(self.progress_bar)
-        results_layout.setAlignment(Qt.AlignTop) # alinha o layout ao topo
-        results_layout.setContentsMargins(0, 0, 0, 0) # remove as margens
-        results_layout.setSpacing(0) # remove o espaçamento
-
-        # criando o botão
-        results_layout.addWidget(self.button_export_csv)
-        results_layout.addWidget(self.button_export_xlsx)
-        
-        results_widget = QWidget()
-        results_widget.setLayout(results_layout)
-        splitter.addWidget(results_widget)
-        return splitter
-  
     def on_button_run_query_clicked(self):
         # Obtendo a query a ser executada
         query = self.text_query.toPlainText()
@@ -101,7 +69,6 @@ class DQLWindow(BaseWindow):  # DQLWindow herda de BaseWindow
                 QMessageBox.warning(self, f"Erro em {db_name}", str(e))
 
             result = self.conn.execute_query(db_name, query)
-            #print(result)
             if not result:
                 pass
             
@@ -114,7 +81,6 @@ class DQLWindow(BaseWindow):  # DQLWindow herda de BaseWindow
             for col in db_columns:
                 if col not in columns:
                     columns.append(col)
-        
         
         if not results:
             QMessageBox.critical(self, f"Erro", "A tabela não existe em nenhum database ou há algum problema nesta consulta")

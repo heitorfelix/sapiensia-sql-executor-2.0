@@ -27,8 +27,7 @@ class DDLWindow(BaseWindow):  # DDLWindow herda de BaseWindow
         self.setWindowTitle("DDL Window")
         self.setWindowIcon(QIcon(os.path.join(CURRENT_DIR, 'icons', 'database.png')))
 
-
-        vertical_layout = self.create_ddl_vertical_splitter()
+        vertical_layout = self.create_vertical_splitter('ddl')  
 
         self.layout.addWidget(vertical_layout, stretch=1) # expande verticalmente
 
@@ -41,39 +40,6 @@ class DDLWindow(BaseWindow):  # DDLWindow herda de BaseWindow
         self.button_run_query.clicked.connect(self.on_button_run_query_clicked)
         self.configure_export_buttons()
  
-    def create_ddl_vertical_splitter(self)->QSplitter:
-
-        # Cria um QSplitter vertical
-        splitter = QSplitter()
-        splitter.setOrientation(0)  #0: Vertical
-
-        ddl_widget = self.create_command_write_widget('DDL/DML')
-        splitter.addWidget(ddl_widget)
-
-        self.progress_bar = QProgressBar(self)
-        self.progress_bar.setEnabled(False)
-
-        # Criando a tabela de resultados
-        results_layout = QVBoxLayout()
-        self.table_results = QTableWidget()
-        results_layout.addWidget(self.table_results)
-        results_layout.addWidget(self.progress_bar)
-        results_layout.addWidget(self.button_export_csv)
-        results_layout.addWidget(self.button_export_xlsx)
-
-        results_layout.setAlignment(Qt.AlignTop) # alinha o layout ao topo
-        results_layout.setContentsMargins(0, 0, 0, 0) # remove as margens
-        results_layout.setSpacing(0) # remove o espaçamento
-        
-        self.table_results.setColumnCount(2)
-        self.columns = ["Banco de dados", "Resultados"]
-        self.table_results.setHorizontalHeaderLabels(self.columns)
-        results_widget = QWidget()
-        results_widget.setLayout(results_layout)
-        splitter.addWidget(results_widget)
-
-        return splitter
-    
     def on_button_run_query_clicked(self):
         # obtendo a query a ser executada
         query = self.text_query.toPlainText()

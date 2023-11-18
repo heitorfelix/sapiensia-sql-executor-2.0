@@ -5,7 +5,8 @@ from json.decoder import JSONDecodeError
 
 from PyQt5.QtWidgets import ( QMainWindow, QLabel, QLineEdit, QPushButton,
                             QVBoxLayout, QWidget, QMessageBox, QTextEdit, 
-                            QListWidget, QAbstractItemView, QAction, QHBoxLayout)
+                            QListWidget, QAbstractItemView, QAction, QHBoxLayout
+                            ,QSplitter, QProgressBar, QTableWidget)
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont, QIcon
 
@@ -179,7 +180,42 @@ class BaseWindow(QMainWindow):
         query_widget.setLayout(query_layout)
  
         return query_widget
-    
+
+    def create_vertical_splitter(self, page):
+            # Cria um QSplitter vertical
+            splitter = QSplitter()
+            splitter.setOrientation(0)  # 0: Vertical
+
+            command_widget = self.create_command_write_widget('DDL/DML' if page == 'ddl' else 'Query (DQL)')
+            splitter.addWidget(command_widget)
+
+            self.progress_bar = QProgressBar(self)
+            self.progress_bar.setEnabled(False)
+
+            # Criando a tabela de resultados
+            results_layout = QVBoxLayout()
+            self.table_results = QTableWidget()
+            results_layout.addWidget(self.table_results)
+            results_layout.addWidget(self.progress_bar)
+
+            # criando o botão
+            results_layout.addWidget(self.button_export_csv)
+            results_layout.addWidget(self.button_export_xlsx)
+
+            results_layout.setAlignment(Qt.AlignTop)  # alinha o layout ao topo
+            results_layout.setContentsMargins(0, 0, 0, 0)  # remove as margens
+            results_layout.setSpacing(0)  # remove o espaçamento
+
+            if page == 'ddl':
+                self.table_results.setColumnCount(2)
+                self.columns = ["Banco de dados", "Resultados"]
+                self.table_results.setHorizontalHeaderLabels(self.columns)
+
+            results_widget = QWidget()
+            results_widget.setLayout(results_layout)
+            splitter.addWidget(results_widget)
+
+            return splitter
     def filter_databases(self):
         # Obtendo o texto da barra de pesquisa
         search_text = self.search_bar.text().strip().lower()
@@ -195,7 +231,6 @@ class BaseWindow(QMainWindow):
 
         # Adicionando os bancos de dados filtrados à lista de seleção
         self.list_select_db.addItems(filtered_databases)
-
 
     def filter_databases_blacklist(self):
         
@@ -219,7 +254,6 @@ class BaseWindow(QMainWindow):
         self.button_export_csv.setEnabled(False) # desabilita o botão inicialmente
         self.button_export_xlsx = QPushButton("Exportar resultados em xlsx")
         self.button_export_xlsx.setEnabled(False) # desabilita o botão inicialmente
-
 
     def configure_export_buttons(self):
             # configura botão oculto para salvar csv
