@@ -63,7 +63,7 @@ class DQLWindow(BaseWindow):  # DQLWindow herda de BaseWindow
                 continue
 
             try:
-                db_columns = self.conn.get_columns(db_name, query)
+                db_columns = self.conn.columns
             except ProgrammingError as e:
                 # Erro ao obter as colunas da consulta
                 QMessageBox.warning(self, f"Erro em {db_name}", str(e))

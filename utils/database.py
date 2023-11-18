@@ -93,18 +93,7 @@ class Conexao:
         # Retornar o nome do banco e o resultado da consulta
         return db_name, result
     
-    def get_columns(self, database, query):
-         # Estabelecer a conexão com o banco
-        conn_str = self.conn_str.replace(self.database, database)
-        conn = pyodbc.connect(conn_str)
-        cursor = conn.cursor()
-        cursor.execute(query)
-        
-        # Obter as colunas do resultado
-        columns = [column[0] for column in cursor.description]
-        conn.close()
-
-        return columns
+    
 
     def execute_query(self, database, query):
 
@@ -124,7 +113,7 @@ class Conexao:
             cursor.execute(query)
             
             # Obter as colunas do resultado
-            columns = [column[0] for column in cursor.description]
+            self.columns = [column[0] for column in cursor.description]
             
             # Obter as linhas do resultado
             rows = cursor.fetchall()
