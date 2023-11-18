@@ -1,10 +1,10 @@
 import os
 import math 
 
-from PyQt5.QtWidgets import (QVBoxLayout, QWidget, QMessageBox, QTableWidget,
-                            QTableWidgetItem,  QSplitter, QProgressBar,)
+from PyQt5.QtWidgets import ( QWidget, QMessageBox,
+                            QTableWidgetItem,  QShortcut)
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import  QIcon
+from PyQt5.QtGui import  QIcon, QKeySequence
 
 from pyodbc import ProgrammingError
 from utils.config import CURRENT_DIR
@@ -28,6 +28,8 @@ class DQLWindow(BaseWindow):  # DQLWindow herda de BaseWindow
 
         # conectando o botão de executar query ao método correspondente
         self.button_run_query.clicked.connect(self.on_button_run_query_clicked)
+        self.shortcut_f5 = QShortcut(QKeySequence(Qt.Key_F5), self)
+        self.shortcut_f5.activated.connect(self.on_button_run_query_clicked)
         self.configure_export_buttons()
 
     def on_button_run_query_clicked(self):
