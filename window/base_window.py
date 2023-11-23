@@ -274,7 +274,7 @@ class BaseWindow(QMainWindow):
             path = config_path
 
         try:
-            with open(f"{path}/csv_{timestamp}.csv", "w", newline="") as arquivo_csv:
+            with open(f"{path}/csv_{timestamp}.csv", "w", newline="", encoding = 'utf-8') as arquivo_csv:
 
                 escritor = csv.writer(arquivo_csv)
                 escritor.writerow(self.columns)
