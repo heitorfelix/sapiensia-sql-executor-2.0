@@ -60,11 +60,6 @@ class Conexao:
     
     def execute_ddl(self, database, query):
 
-        # ddl_keywords = ['alter', 'create', 'drop', 'truncate', 'rename', 'insert', 'grant', 'revoke', 'exec']
-
-        # if query.split()[0].lower() not in ddl_keywords:
-        #     raise QueryError("This application only accepts DDL queries")
-
         # Estabelecer a conexão com o banco
         conn_str = self.conn_str.replace(self.database, database)
         conn = pyodbc.connect(conn_str)

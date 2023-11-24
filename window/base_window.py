@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import ( QMainWindow, QLabel, QLineEdit, QPushButton,
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont, QIcon
 
+from window.custom_filter import CustomFilterDialog
 
 from datetime import datetime
 import pandas as pd
@@ -18,10 +19,11 @@ from utils.config import ConfigDialog, CONFIG_FILE, CURRENT_DIR, GEOMETRY_BASE_W
 
 
 class BaseWindow(QMainWindow):
+
     def __init__(self, conn):
         super().__init__()
         self.conn = conn
-        
+        self.databases = self.conn.list_databases()
         self.create_menu_bar()
         self.setGeometry(GEOMETRY_BASE_WINDOW)
 
@@ -62,9 +64,10 @@ class BaseWindow(QMainWindow):
         self.status_label.setText(new_text)
         self.statusBar().update()
 
+
+
     def open_options(self):
         config_dialog = ConfigDialog(self.conn.server, self.conn.list_databases(), self)
-        print(self.conn.list_databases())
         config_dialog.exec_()
 
     def create_menu_bar(self):
@@ -84,6 +87,10 @@ class BaseWindow(QMainWindow):
         not_use_blacklist_action = QAction('Not Use Blacklist', self)
         not_use_blacklist_action.triggered.connect(self._refresh_database_list)
         options_menu.addAction(not_use_blacklist_action)
+
+        custom_database_filter = QAction('Copy Paste Databases', self)
+        custom_database_filter.triggered.connect(self.open_custom_filter)
+        options_menu.addAction(custom_database_filter)
 
         logout_action = QAction(QIcon(os.path.join(CURRENT_DIR, 'icons', 'logout_icon.png')), 'Logout', self)
         logout_action.triggered.connect(self.logout)
@@ -113,9 +120,9 @@ class BaseWindow(QMainWindow):
     def _refresh_database_list(self):
         # limpa a lista atual de bancos de dados
         self.list_select_db.clear()
-
+        self.databases = self.conn.list_databases()
         # atualiza a lista de bancos de dados
-        self.list_select_db.addItems(self.conn.list_databases())
+        self.list_select_db.addItems(self.databases)
 
     def switch_to_ddl_page(self):
 
@@ -143,7 +150,7 @@ class BaseWindow(QMainWindow):
         self.label_select_db = self.create_label("Selecionar banco(s) de dados:")
         self.list_select_db = QListWidget()
         self.list_select_db.setSelectionMode(QAbstractItemView.MultiSelection)
-        self.list_select_db.addItems(self.conn.list_databases())
+        self.list_select_db.addItems(self.databases)
         
     def create_label(self, text):
         label = QLabel(text)
@@ -216,12 +223,13 @@ class BaseWindow(QMainWindow):
             splitter.addWidget(results_widget)
 
             return splitter
+
     def filter_databases(self):
         # Obtendo o texto da barra de pesquisa
         search_text = self.search_bar.text().strip().lower()
 
         # Obtendo todos os bancos de dados disponíveis
-        all_databases = self.conn.list_databases()
+        all_databases = self.databases
 
         # Filtrando os bancos de dados que correspondem ao texto da pesquisa
         filtered_databases = [db for db in all_databases if search_text in db.lower()]
@@ -243,10 +251,22 @@ class BaseWindow(QMainWindow):
         else:
             
             blacklist = self.config['black_list']
-            all_databases = self.conn.list_databases()
+            all_databases = self.databases
             filtered_databases = [db for db in all_databases if db not in blacklist]
             self.list_select_db.clear()
             self.list_select_db.addItems(filtered_databases)
+
+    def filter_databases_custom(self, databases: list):
+
+        self.list_select_db.clear()
+
+        self.list_select_db.addItems(databases)
+
+
+    def open_custom_filter(self):
+        custom_filter_dialog = CustomFilterDialog( self)
+        custom_filter_dialog.databasesFiltered.connect(self.filter_databases_custom)
+        custom_filter_dialog.exec_()
 
     def create_export_button(self):
         # criando o botão
