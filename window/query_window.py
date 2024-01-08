@@ -85,7 +85,8 @@ class DQLWindow(BaseWindow):  # DQLWindow herda de BaseWindow
                     columns.append(col)
         
         if not results:
-            QMessageBox.critical(self, f"Erro", "A tabela não existe em nenhum database ou há algum problema nesta consulta")
+            pass
+            # QMessageBox.critical(self, f"Erro", "A tabela não existe em nenhum database ou há algum problema nesta consulta")
         
         # Preenchendo a tabela com os resultados
         self.table_results.setRowCount(len(results))
