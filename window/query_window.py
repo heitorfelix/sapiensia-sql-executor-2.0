@@ -9,7 +9,7 @@ from PyQt5.QtGui import  QIcon, QKeySequence
 from pyodbc import ProgrammingError
 from utils.config import CURRENT_DIR
 from window.base_window import BaseWindow
-
+from PyQt5.QtWidgets import QApplication
 
 class DQLWindow(BaseWindow):  # DQLWindow herda de BaseWindow
 
@@ -77,7 +77,8 @@ class DQLWindow(BaseWindow):  # DQLWindow herda de BaseWindow
             else:
                 results += result
             self.progress_bar.setValue(step)
-
+            QApplication.processEvents()
+            
         self.progress_bar.setValue(100) # força finalizar a barra
         if db_columns:
             for col in db_columns:

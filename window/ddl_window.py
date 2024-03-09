@@ -1,12 +1,13 @@
 import os
 import math 
 
-from PyQt5.QtWidgets import ( QWidget, QTableWidgetItem, QShortcut)
+from PyQt5.QtWidgets import QWidget, QTableWidgetItem, QShortcut, QApplication
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import  QColor, QIcon, QKeySequence
 
 from utils.config import  CONFIG_FILE, CURRENT_DIR
 from window.base_window import BaseWindow
+
 
 class DDLWindow(BaseWindow):  # DDLWindow herda de BaseWindow
 
@@ -55,6 +56,7 @@ class DDLWindow(BaseWindow):  # DDLWindow herda de BaseWindow
                 # armazenando a mensagem de erro
                 self.results.append((db_name, str(e)))
             self.progress_bar.setValue(step)
+            QApplication.processEvents()
         self._sort_results()
         # preenchendo a tabela com os resultados
         self.table_results.setRowCount(len(self.results))
