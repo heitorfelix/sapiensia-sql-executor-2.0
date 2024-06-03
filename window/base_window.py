@@ -72,6 +72,7 @@ class BaseWindow(QMainWindow):
 
     def create_menu_bar(self):
         menubar = self.menuBar()
+        new = menubar.addMenu('New')
         user_menu = menubar.addMenu('User')
         page_menu = menubar.addMenu('Pages')
         options_menu =  menubar.addMenu('Options')
@@ -107,6 +108,18 @@ class BaseWindow(QMainWindow):
         query_action = QAction('Query', self)
         query_action.triggered.connect(self.switch_to_query_page)
         page_menu.addAction(query_action)
+
+        new_action = QAction(QIcon(os.path.join(CURRENT_DIR, 'icons', 'plug.png')),'Connection', self)
+        new_action.triggered.connect(self.new_connection)
+        new.addAction(new_action)
+
+    def new_connection(self):
+        from window.login_window import LoginWindow
+
+        # abrindo uma nova instância da janela de login
+        self.login_window = LoginWindow()
+        self.login_window.show()
+
 
     def logout(self):
         from window.login_window import LoginWindow
