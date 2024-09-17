@@ -6,9 +6,9 @@ from json.decoder import JSONDecodeError
 from PyQt5.QtWidgets import ( QMainWindow, QLabel, QLineEdit, QPushButton,
                             QVBoxLayout, QWidget, QMessageBox, QTextEdit, 
                             QListWidget, QAbstractItemView, QAction, QHBoxLayout
-                            ,QSplitter, QProgressBar, QTableWidget)
+                            ,QSplitter, QProgressBar, QTableWidget, QApplication, QShortcut)
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont, QIcon
+from PyQt5.QtGui import QFont, QIcon, QKeySequence
 
 from window.custom_filter import CustomFilterDialog
 
@@ -39,6 +39,15 @@ class BaseWindow(QMainWindow):
         if self.config:
             if self.config['always_use_blacklist_filter']:
                 self.filter_databases_blacklist()
+
+        # Atalho para copiar apenas linhas (Ctrl+C)
+        self.shortcut_copy = QShortcut(QKeySequence("Ctrl+C"), self)
+        self.shortcut_copy.activated.connect(lambda: self.copy_table_selection(include_headers=False))
+
+        # Atalho para copiar colunas e linhas (Ctrl+Shift+C)
+        self.shortcut_copy_with_headers = QShortcut(QKeySequence("Ctrl+Shift+C"), self)
+        self.shortcut_copy_with_headers.activated.connect(lambda: self.copy_table_selection(include_headers=True))
+    
        
     def get_config(self):
         if os.path.exists(CONFIG_FILE):
@@ -350,3 +359,30 @@ class BaseWindow(QMainWindow):
         else:
             self.button_export_csv.setEnabled(False)
             self.button_export_xlsx.setEnabled(False)
+
+    def copy_table_selection(self, include_headers=False):
+        selection = self.table_results.selectedRanges()
+        if selection:
+            selected_text = ""
+
+            # Se for para incluir os cabeçalhos (Ctrl+Shift+C)
+            if include_headers:
+                headers = []
+                for col in range(selection[0].leftColumn(), selection[0].rightColumn() + 1):
+                    headers.append(self.table_results.horizontalHeaderItem(col).text())
+                selected_text += "\t".join(headers) + "\n"
+
+
+            for selected_range in selection:
+                for row in range(selected_range.topRow(), selected_range.bottomRow() + 1):
+                    row_data = []
+                    for col in range(selected_range.leftColumn(), selected_range.rightColumn() + 1):
+                        item = self.table_results.item(row, col)
+                        if item is not None:
+                            row_data.append(item.text())
+                        else:
+                            row_data.append('')
+                    selected_text += "\t".join(row_data) + "\n"
+            # Copiando para a área de transferência
+            clipboard = QApplication.clipboard()
+            clipboard.setText(selected_text)
