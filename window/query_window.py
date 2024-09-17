@@ -31,6 +31,27 @@ class DQLWindow(BaseWindow):  # DQLWindow herda de BaseWindow
         self.shortcut_f5 = QShortcut(QKeySequence(Qt.Key_F5), self)
         self.shortcut_f5.activated.connect(self.on_button_run_query_clicked)
         self.configure_export_buttons()
+        self.shortcut_copy = QShortcut(QKeySequence("Ctrl+C"), self)
+        self.shortcut_copy.activated.connect(self.copy_table_selection)
+
+    def copy_table_selection(self):
+        selection = self.table_results.selectedRanges()
+        if selection:
+            selected_text = ""
+            for selected_range in selection:
+                for row in range(selected_range.topRow(), selected_range.bottomRow() + 1):
+                    row_data = []
+                    for col in range(selected_range.leftColumn(), selected_range.rightColumn() + 1):
+                        item = self.table_results.item(row, col)
+                        if item is not None:
+                            row_data.append(item.text())
+                        else:
+                            row_data.append('')
+                    selected_text += "\t".join(row_data) + "\n"
+            # Copiando para a área de transferência
+            clipboard = QApplication.clipboard()
+            clipboard.setText(selected_text)
+
 
     def on_button_run_query_clicked(self):
         # Obtendo a query a ser executada
