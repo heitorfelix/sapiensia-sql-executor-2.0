@@ -35,6 +35,8 @@ class BaseWindow(QMainWindow):
         self.create_status_bar()        
         self.create_export_button()
 
+        self.canceled = False
+
         self.config = self.get_config()
         if self.config:
             if self.config['always_use_blacklist_filter']:
@@ -47,8 +49,10 @@ class BaseWindow(QMainWindow):
         # Atalho para copiar colunas e linhas (Ctrl+Shift+C)
         self.shortcut_copy_with_headers = QShortcut(QKeySequence("Ctrl+Shift+C"), self)
         self.shortcut_copy_with_headers.activated.connect(lambda: self.copy_table_selection(include_headers=True))
-    
-       
+
+    def _cancel_queries(self):
+        self.canceled = True
+
     def get_config(self):
         if os.path.exists(CONFIG_FILE):
             try:
@@ -72,8 +76,6 @@ class BaseWindow(QMainWindow):
         new_text = f"Usuário: {self.conn.user} - Servidor: {self.conn.server} - Database: {db_name}"
         self.status_label.setText(new_text)
         self.statusBar().update()
-
-
 
     def open_options(self):
         config_dialog = ConfigDialog(self.conn.server, self.conn.list_databases(), self)
@@ -129,7 +131,6 @@ class BaseWindow(QMainWindow):
         self.login_window = LoginWindow()
         self.login_window.show()
 
-
     def logout(self):
         from window.login_window import LoginWindow
         # fechando a janela atual
@@ -162,6 +163,8 @@ class BaseWindow(QMainWindow):
     def create_widgets(self):
         self.text_query = QTextEdit()
         self.button_run_query = QPushButton("Executar")
+        self.button_cancel_query = QPushButton("Cancel")
+        self.button_cancel_query.setEnabled(False)
 
     def create_search_bar(self):
         self.search_bar = QLineEdit()
@@ -201,6 +204,7 @@ class BaseWindow(QMainWindow):
         query_layout.addWidget(self.text_query)
         self.text_query.setFont(QFont("Consolas", 10))  # aplica a fonte ao widget QTextEdit
         query_layout.addWidget(self.button_run_query)
+        query_layout.addWidget(self.button_cancel_query)
  
         query_layout.setAlignment(Qt.AlignTop)
         query_layout.setContentsMargins(0,0,0,0)
@@ -283,7 +287,6 @@ class BaseWindow(QMainWindow):
         self.list_select_db.clear()
 
         self.list_select_db.addItems(databases)
-
 
     def open_custom_filter(self):
         custom_filter_dialog = CustomFilterDialog( self)
