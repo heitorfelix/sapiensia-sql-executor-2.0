@@ -1,7 +1,7 @@
 import os
 import math 
 
-from PyQt5.QtWidgets import QWidget, QTableWidgetItem, QShortcut, QApplication
+from PyQt5.QtWidgets import QWidget, QTableWidgetItem, QShortcut, QApplication, QMessageBox
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import  QColor, QIcon, QKeySequence
 
@@ -44,7 +44,12 @@ class DDLWindow(BaseWindow):  # DDLWindow herda de BaseWindow
         self.progress_bar.setEnabled(True)
 
         number_of_dbs = len(selected_databases)
+
+    
         for i ,db_name in enumerate(selected_databases):
+
+            self.button_cancel_query.setEnabled(True)
+            self.button_cancel_query.clicked.connect(self._cancel_queries)
             step = math.ceil((i+1)/number_of_dbs * 100)
             self.update_status_bar(db_name)
             
@@ -57,6 +62,13 @@ class DDLWindow(BaseWindow):  # DDLWindow herda de BaseWindow
                 self.results.append((db_name, str(e)))
             self.progress_bar.setValue(step)
             QApplication.processEvents()
+            if self.canceled:
+                QMessageBox.warning(self, f"Cancelada", "Comando cancelado, exibindo resultados...")
+                break
+#SELECT Id, Nome, from reports.trabalhador
+        self.button_cancel_query.setEnabled(False)  
+        self.canceled = False
+
         self._sort_results()
         # preenchendo a tabela com os resultados
         self.table_results.setRowCount(len(self.results))
