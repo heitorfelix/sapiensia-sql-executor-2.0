@@ -32,7 +32,8 @@ class DQLWindow(BaseWindow):  # DQLWindow herda de BaseWindow
         self.shortcut_f5 = QShortcut(QKeySequence(Qt.Key_F5), self)
         self.shortcut_f5.activated.connect(self.on_button_run_query_clicked)
         self.configure_export_buttons()
- 
+
+
     def on_button_run_query_clicked(self):
         # Obtendo a query a ser executada
         query = self.text_query.toPlainText()
@@ -52,6 +53,9 @@ class DQLWindow(BaseWindow):  # DQLWindow herda de BaseWindow
             
 
         for i, db_name in enumerate(selected_databases):
+
+            self.button_cancel_query.setEnabled(True)
+            self.button_cancel_query.clicked.connect(self._cancel_queries)
             step = math.ceil((i + 1) / number_of_dbs * 100)
             self.update_status_bar(db_name)
             try:
@@ -79,7 +83,16 @@ class DQLWindow(BaseWindow):  # DQLWindow herda de BaseWindow
             self.progress_bar.setValue(step)
             QApplication.processEvents()
 
-        self.progress_bar.setValue(100)
+            if self.canceled:
+                QMessageBox.warning(self, f"Cancelada", "Comando cancelado, exibindo resultados...")
+                break
+
+        self.button_cancel_query.setEnabled(False)
+
+        if not self.canceled:
+            self.progress_bar.setValue(100)
+
+        self.canceled = False
         if db_columns:
             for col in db_columns:
                 if col not in columns:
